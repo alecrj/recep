@@ -1,0 +1,379 @@
+// Prisma Schema for AI Receptionist System
+// Multi-tenant architecture with complete isolation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// CORE BUSINESS ENTITIES
+// ============================================
+
+model Business {
+  id          String   @id @default(uuid())
+  name        String
+  industry    String?
+  phoneNumber String?  @unique @map("phone_number")
+  twilioNumber String? @unique @map("twilio_number")
+  status      BusinessStatus @default(TRIAL)
+  plan        BusinessPlan   @default(STARTER)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Owner info
+  ownerEmail  String   @map("owner_email")
+  ownerPhone  String?  @map("owner_phone")
+  ownerName   String?  @map("owner_name")
+  password    String?  // Hashed password for business owner login
+
+  // Relations
+  config       BusinessConfig?
+  customers    Customer[]
+  appointments Appointment[]
+  calls        Call[]
+  payments     Payment[]
+  messages     Message[]
+  usageLogs    UsageLog[]
+
+  @@map("businesses")
+}
+
+enum BusinessStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum BusinessPlan {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+// ============================================
+// BUSINESS CONFIGURATION (AI Settings)
+// ============================================
+
+model BusinessConfig {
+  id         String   @id @default(uuid())
+  businessId String   @unique @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  // AI Personality
+  aiAgentName      String  @default("Sarah") @map("ai_agent_name")
+  aiVoiceId        String  @default("21m00Tcm4TlvDq8ikWAM") @map("ai_voice_id") // Rachel from ElevenLabs
+  aiTone           String  @default("professional") @map("ai_tone")
+  greetingMessage  String? @map("greeting_message")
+
+  // Business Info (JSON fields)
+  businessHours       Json?   @map("business_hours") // {"monday": {"open": "09:00", "close": "17:00"}}
+  businessHoursStart  String? @default("09:00") @map("business_hours_start") // Simple start time for availability
+  businessHoursEnd    String? @default("17:00") @map("business_hours_end")   // Simple end time for availability
+  appointmentDuration Int?    @default(60) @map("appointment_duration")      // Default appointment length in minutes
+  services            Json?   // [{"name": "AC Repair", "price": "$150+", "duration": 60}]
+  faqs                Json?   // [{"question": "...", "answer": "..."}]
+
+  // Integration Tokens
+  googleCalendarId            String?   @map("google_calendar_id")
+  googleCalendarAccessToken   String?   @map("google_calendar_access_token")
+  googleCalendarRefreshToken  String?   @map("google_calendar_refresh_token")
+  googleCalendarTokenExpiry   DateTime? @map("google_calendar_token_expiry")
+  stripeAccountId             String?   @map("stripe_account_id")
+
+  // Call Routing Rules
+  emergencyKeywords String[] @map("emergency_keywords") // ['emergency', 'urgent', 'flooding']
+  transferNumber    String?  @map("transfer_number")
+  transferKeywords  String[] @map("transfer_keywords") // ['manager', 'owner', 'human']
+
+  // Feature Flags
+  bookingEnabled    Boolean @default(true) @map("booking_enabled")
+  paymentEnabled    Boolean @default(false) @map("payment_enabled")
+  reminderEnabled   Boolean @default(true) @map("reminder_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("business_configs")
+}
+
+// ============================================
+// CUSTOMERS (CRM)
+// ============================================
+
+model Customer {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name    String
+  phone   String
+  email   String?
+  address String?
+  notes   String?
+
+  // Metadata
+  createdAt         DateTime  @default(now()) @map("created_at")
+  lastContact       DateTime? @map("last_contact")
+  totalAppointments Int       @default(0) @map("total_appointments")
+  totalSpent        Decimal   @default(0) @map("total_spent") @db.Decimal(10, 2)
+
+  // Relations
+  appointments Appointment[]
+  calls        Call[]
+  payments     Payment[]
+
+  @@unique([businessId, phone])
+  @@index([businessId, phone])
+  @@index([businessId, email])
+  @@map("customers")
+}
+
+// ============================================
+// APPOINTMENTS
+// ============================================
+
+model Appointment {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  // Scheduling
+  scheduledTime   DateTime @map("scheduled_time")
+  durationMinutes Int      @map("duration_minutes")
+  serviceType     String   @map("service_type")
+  status          AppointmentStatus @default(SCHEDULED)
+
+  // Customer Info (denormalized for reliability)
+  customerName    String  @map("customer_name")
+  customerPhone   String  @map("customer_phone")
+  customerAddress String? @map("customer_address")
+  notes           String?
+
+  // Integration IDs
+  googleCalendarEventId String? @unique @map("google_calendar_event_id")
+
+  // Metadata
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdBy   String   @default("ai") @map("created_by") // 'ai', 'owner', 'customer'
+
+  // Notifications
+  confirmationSent Boolean @default(false) @map("confirmation_sent")
+  reminderSent     Boolean @default(false) @map("reminder_sent")
+
+  // Relations
+  payments Payment[]
+
+  @@index([businessId, scheduledTime])
+  @@index([businessId, status])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+// ============================================
+// CALLS (Complete Call Logs)
+// ============================================
+
+model Call {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  // Call Details
+  fromNumber String @map("from_number")
+  toNumber   String @map("to_number")
+  callSid    String @unique @map("call_sid") // Twilio Call SID
+
+  // Timing
+  startedAt       DateTime  @map("started_at")
+  endedAt         DateTime? @map("ended_at")
+  durationSeconds Int?      @map("duration_seconds")
+
+  // Content
+  transcript   String? @db.Text
+  recordingUrl String? @map("recording_url")
+
+  // Analysis
+  outcome       CallOutcome? // 'appointment_booked', 'message_taken', etc.
+  intent        CallIntent?  // 'schedule', 'emergency', 'question', etc.
+  aiConfidence  Decimal?     @map("ai_confidence") @db.Decimal(3, 2) // 0.00 to 1.00
+
+  // Cost Tracking
+  cost Decimal? @db.Decimal(8, 4) // Your actual cost for this call
+
+  // Additional Data
+  metadata Json? // Any extra structured data
+
+  // Relations
+  messages Message[]
+
+  @@index([businessId, startedAt])
+  @@index([businessId, outcome])
+  @@index([customerId])
+  @@map("calls")
+}
+
+enum CallOutcome {
+  APPOINTMENT_BOOKED
+  MESSAGE_TAKEN
+  TRANSFERRED
+  QUESTION_ANSWERED
+  EMERGENCY_FLAGGED
+  RESCHEDULED
+  CANCELLED
+  HUNG_UP
+  FAILED
+}
+
+enum CallIntent {
+  SCHEDULE
+  RESCHEDULE
+  CANCEL
+  EMERGENCY
+  QUESTION
+  PRICING
+  HOURS
+  LOCATION
+  COMPLAINT
+  FOLLOWUP
+  OTHER
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+model Payment {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  customerId String?   @map("customer_id")
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  appointmentId String?      @map("appointment_id")
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  // Payment Details
+  amount            Decimal @db.Decimal(10, 2)
+  status            PaymentStatus @default(PENDING)
+  stripePaymentId   String? @unique @map("stripe_payment_id")
+  stripePaymentUrl  String? @map("stripe_payment_url") // Payment link sent to customer
+
+  // Timing
+  createdAt DateTime  @default(now()) @map("created_at")
+  paidAt    DateTime? @map("paid_at")
+
+  @@index([businessId, status])
+  @@index([appointmentId])
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+// ============================================
+// MESSAGES (AI-Taken Messages)
+// ============================================
+
+model Message {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  callId String? @map("call_id")
+  call   Call?   @relation(fields: [callId], references: [id], onDelete: SetNull)
+
+  // Message Content
+  fromName  String  @map("from_name")
+  fromPhone String  @map("from_phone")
+  message   String  @db.Text
+  urgent    Boolean @default(false)
+
+  // Status
+  status    MessageStatus @default(NEW)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([businessId, status])
+  @@index([businessId, urgent])
+  @@map("messages")
+}
+
+enum MessageStatus {
+  NEW
+  READ
+  ACTED_ON
+  ARCHIVED
+}
+
+// ============================================
+// USAGE TRACKING (For Billing)
+// ============================================
+
+model UsageLog {
+  id         String   @id @default(uuid())
+  businessId String   @map("business_id")
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  date        DateTime @db.Date
+  callsCount  Int      @default(0) @map("calls_count")
+  totalMinutes Decimal @default(0) @map("total_minutes") @db.Decimal(10, 2)
+  totalCost   Decimal  @default(0) @map("total_cost") @db.Decimal(10, 2)
+  smsSent     Int      @default(0) @map("sms_sent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([businessId, date])
+  @@index([businessId, date])
+  @@map("usage_logs")
+}
+
+// ============================================
+// SYSTEM ADMIN
+// ============================================
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // Hashed with bcrypt
+  name      String
+  role      AdminRole @default(ADMIN)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  lastLogin DateTime? @map("last_login")
+
+  @@map("admins")
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  SUPPORT
+}

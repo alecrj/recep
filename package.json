@@ -1,0 +1,28 @@
+{
+  "name": "ai-receptionist-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Complete AI Receptionist System - Multi-tenant SaaS",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:migrate": "cd packages/database && npm run migrate",
+    "db:studio": "cd packages/database && npm run studio",
+    "setup": "node scripts/setup.js"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "prettier": "^3.0.0",
+    "eslint": "^8.50.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
