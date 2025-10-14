@@ -23,7 +23,7 @@ async function authenticateAdmin(req, res, next) {
 
     // Load admin from database
     const admin = await prisma.admin.findUnique({
-      where: { id: decoded.userId },
+      where: { id: decoded.id },
       select: { id: true, email: true, name: true, role: true },
     });
 
@@ -31,6 +31,7 @@ async function authenticateAdmin(req, res, next) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
+    req.user = admin;
     req.admin = admin;
     next();
   } catch (error) {
@@ -67,7 +68,7 @@ async function authenticateBusiness(req, res, next) {
 
     // Load business from database
     const business = await prisma.business.findUnique({
-      where: { id: decoded.businessId },
+      where: { id: decoded.id },
       select: {
         id: true,
         name: true,
@@ -84,6 +85,7 @@ async function authenticateBusiness(req, res, next) {
       return res.status(403).json({ error: 'Account suspended' });
     }
 
+    req.user = business;
     req.business = business;
     req.businessId = business.id; // Convenience
     next();
@@ -128,4 +130,7 @@ module.exports = {
   authenticateAdmin,
   authenticateBusiness,
   verifyTwilioSignature,
+  // Aliases for cleaner code
+  requireAdmin: authenticateAdmin,
+  requireBusiness: authenticateBusiness,
 };

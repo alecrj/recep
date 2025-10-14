@@ -109,8 +109,8 @@ const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
 // Business owner routes
-// const businessRoutes = require('./routes/business');
-// app.use('/api/business', businessRoutes);
+const businessRoutes = require('./routes/business');
+app.use('/api/business', businessRoutes);
 
 // Call handling routes (THE CRITICAL ONE)
 const callRoutes = require('./routes/calls');
@@ -199,6 +199,8 @@ server.listen(PORT, () => {
     { name: 'Deepgram', enabled: !!config.DEEPGRAM_API_KEY && config.DEEPGRAM_API_KEY !== 'your_deepgram_api_key' },
     { name: 'OpenAI', enabled: !!config.OPENAI_API_KEY && config.OPENAI_API_KEY !== 'your_openai_api_key' },
     { name: 'ElevenLabs', enabled: !!config.ELEVENLABS_API_KEY && config.ELEVENLABS_API_KEY !== 'your_elevenlabs_api_key' },
+    { name: 'Google Calendar', enabled: !!config.GOOGLE_CLIENT_ID && config.GOOGLE_CLIENT_ID !== 'your_google_client_id' },
+    { name: 'Stripe', enabled: !!config.STRIPE_SECRET_KEY && config.STRIPE_SECRET_KEY !== 'your_stripe_secret_key' },
   ];
 
   logger.info('Services Status:');
