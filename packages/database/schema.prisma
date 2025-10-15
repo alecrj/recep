@@ -364,6 +364,43 @@ model UsageLog {
 }
 
 // ============================================
+// PHONE NUMBERS (Pool Management)
+// ============================================
+
+model PhoneNumber {
+  id              String   @id @default(uuid())
+  phoneNumber     String   @unique @map("phone_number") // +15551234567
+  twilioSid       String?  @unique @map("twilio_sid")
+  friendlyName    String?  @map("friendly_name") // "New York Number"
+
+  // Assignment
+  businessId      String?  @map("business_id")
+  assignedAt      DateTime? @map("assigned_at")
+
+  // Status
+  status          PhoneNumberStatus @default(AVAILABLE)
+
+  // Metadata
+  capabilities    Json?    // {"voice": true, "sms": true, "mms": false}
+  country         String   @default("US")
+  region          String?  // "NY", "CA", etc.
+
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([businessId])
+  @@map("phone_numbers")
+}
+
+enum PhoneNumberStatus {
+  AVAILABLE
+  ASSIGNED
+  RESERVED
+  DISABLED
+}
+
+// ============================================
 // SYSTEM ADMIN
 // ============================================
 

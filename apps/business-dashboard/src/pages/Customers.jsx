@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { MagnifyingGlassIcon, PhoneIcon, EnvelopeIcon, CalendarIcon, ClockIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import api from '../lib/api';
 
 export default function Customers() {
@@ -34,28 +35,26 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your customer relationships</p>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-display font-bold text-white tracking-tight">Customers</h1>
+        <p className="text-zinc-400 text-sm">Manage your customer relationships</p>
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
         <div className="relative">
           <input
             type="text"
             placeholder="Search customers by name, phone, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full px-4 py-3 pl-12 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
-            🔍
-          </span>
+          <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-300 text-xl"
             >
               ×
             </button>
@@ -64,41 +63,41 @@ export default function Customers() {
       </div>
 
       {/* Customers Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-zinc-900 rounded-xl shadow-sm overflow-hidden border border-zinc-800">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
           </div>
         ) : filteredCustomers?.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-900">
+            <table className="min-w-full divide-y divide-zinc-800">
+              <thead className="bg-zinc-900">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Customer
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Total Calls
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Appointments
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Last Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-zinc-800">
                 {filteredCustomers.map((customer) => (
                   <tr
                     key={customer.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="hover:bg-zinc-800/50 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -106,40 +105,40 @@ export default function Customers() {
                           {customer.name?.charAt(0)?.toUpperCase() || '?'}
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-sm font-medium text-white">
                             {customer.name || 'Unknown'}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-zinc-400">
                             ID: {customer.id.slice(0, 8)}...
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <div className="text-sm text-white">
                         {customer.phone || 'N/A'}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-zinc-400">
                         {customer.email || 'No email'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl text-gray-900 dark:text-white font-semibold">
+                        <span className="text-2xl text-white font-semibold">
                           {customer._count?.calls || 0}
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">calls</span>
+                        <span className="text-xs text-zinc-400">calls</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl text-gray-900 dark:text-white font-semibold">
+                        <span className="text-2xl text-white font-semibold">
                           {customer._count?.appointments || 0}
                         </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">appts</span>
+                        <span className="text-xs text-zinc-400">appts</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                       {customer.lastContactedAt
                         ? new Date(customer.lastContactedAt).toLocaleDateString()
                         : 'Never'}
@@ -147,7 +146,7 @@ export default function Customers() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
                         onClick={() => setSelectedCustomer(customer.id)}
-                        className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
+                        className="text-green-400 hover:text-green-300 font-medium transition-colors"
                       >
                         View Profile
                       </button>
@@ -159,7 +158,7 @@ export default function Customers() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-zinc-500">
               {searchQuery ? 'No customers found matching your search' : 'No customers yet'}
             </p>
           </div>
@@ -174,16 +173,16 @@ export default function Customers() {
             onClick={() => setSelectedCustomer(null)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[85vh] overflow-hidden">
+            <div className="bg-zinc-900 rounded-xl shadow-xl max-w-3xl w-full max-h-[85vh] overflow-hidden border border-zinc-800">
               {/* Modal Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-600 to-emerald-600">
+              <div className="p-6 border-b border-zinc-800 bg-gradient-to-r from-green-600 to-emerald-600">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-2xl">
                       {customerDetails.customer.name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-white">
+                      <h3 className="text-2xl font-display font-bold text-white">
                         {customerDetails.customer.name || 'Unknown Customer'}
                       </h3>
                       <p className="text-green-100 mt-1">
@@ -193,7 +192,7 @@ export default function Customers() {
                   </div>
                   <button
                     onClick={() => setSelectedCustomer(null)}
-                    className="text-white/80 hover:text-white"
+                    className="text-white/80 hover:text-white transition-colors"
                   >
                     <span className="text-3xl">×</span>
                   </button>
@@ -204,21 +203,21 @@ export default function Customers() {
               <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   {/* Stats Cards */}
-                  <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
-                    <p className="text-sm text-cyan-600 dark:text-cyan-400 mb-1">Total Calls</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <div className="bg-cyan-900/20 rounded-lg p-4 border border-cyan-800/30">
+                    <p className="text-sm text-cyan-400 mb-1">Total Calls</p>
+                    <p className="text-3xl font-bold text-white">
                       {customerDetails.customer._count?.calls || 0}
                     </p>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                    <p className="text-sm text-green-600 dark:text-green-400 mb-1">Appointments</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                  <div className="bg-green-900/20 rounded-lg p-4 border border-green-800/30">
+                    <p className="text-sm text-green-400 mb-1">Appointments</p>
+                    <p className="text-3xl font-bold text-white">
                       {customerDetails.customer._count?.appointments || 0}
                     </p>
                   </div>
-                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                    <p className="text-sm text-purple-600 dark:text-purple-400 mb-1">Last Contact</p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                  <div className="bg-purple-900/20 rounded-lg p-4 border border-purple-800/30">
+                    <p className="text-sm text-purple-400 mb-1">Last Contact</p>
+                    <p className="text-lg font-bold text-white">
                       {customerDetails.customer.lastContactedAt
                         ? new Date(customerDetails.customer.lastContactedAt).toLocaleDateString()
                         : 'Never'}
@@ -227,23 +226,23 @@ export default function Customers() {
                 </div>
 
                 {/* Contact Information */}
-                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h4>
+                <div className="bg-zinc-900 rounded-lg p-6 mb-6 border border-zinc-800">
+                  <h4 className="font-display font-semibold text-white mb-4">Contact Information</h4>
                   <div className="space-y-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">📞</span>
+                      <PhoneIcon className="w-5 h-5 text-zinc-400" />
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
-                        <p className="text-gray-900 dark:text-white font-medium">
+                        <p className="text-xs text-zinc-500">Phone</p>
+                        <p className="text-white font-medium">
                           {customerDetails.customer.phone || 'N/A'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">✉️</span>
+                      <EnvelopeIcon className="w-5 h-5 text-zinc-400" />
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
-                        <p className="text-gray-900 dark:text-white font-medium">
+                        <p className="text-xs text-zinc-500">Email</p>
+                        <p className="text-white font-medium">
                           {customerDetails.customer.email || 'N/A'}
                         </p>
                       </div>
@@ -254,15 +253,15 @@ export default function Customers() {
                 {/* Recent Calls */}
                 {customerDetails.recentCalls && customerDetails.recentCalls.length > 0 && (
                   <div className="mb-6">
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Recent Calls</h4>
+                    <h4 className="font-display font-semibold text-white mb-3">Recent Calls</h4>
                     <div className="space-y-3">
                       {customerDetails.recentCalls.map((call) => (
                         <div
                           key={call.id}
-                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                          className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                            <span className="text-sm text-zinc-400">
                               {new Date(call.startedAt).toLocaleString()}
                             </span>
                             <span
@@ -271,13 +270,13 @@ export default function Customers() {
                                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                   : call.outcome === 'MESSAGE_TAKEN'
                                   ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400'
-                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                                  : 'bg-zinc-800 text-zinc-300'
                               }`}
                             >
                               {call.outcome?.replace(/_/g, ' ')}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-900 dark:text-white">
+                          <p className="text-sm text-white">
                             Duration: {call.durationSeconds ? `${Math.floor(call.durationSeconds / 60)}:${(call.durationSeconds % 60).toString().padStart(2, '0')}` : 'N/A'}
                           </p>
                         </div>
@@ -289,15 +288,15 @@ export default function Customers() {
                 {/* Upcoming Appointments */}
                 {customerDetails.upcomingAppointments && customerDetails.upcomingAppointments.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Upcoming Appointments</h4>
+                    <h4 className="font-display font-semibold text-white mb-3">Upcoming Appointments</h4>
                     <div className="space-y-3">
                       {customerDetails.upcomingAppointments.map((appointment) => (
                         <div
                           key={appointment.id}
-                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                          className="bg-zinc-900 border border-zinc-800 rounded-lg p-4"
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            <span className="text-sm font-medium text-white">
                               {appointment.serviceType || 'Appointment'}
                             </span>
                             <span
@@ -310,10 +309,21 @@ export default function Customers() {
                               {appointment.status}
                             </span>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                            <span>📅 {new Date(appointment.scheduledTime).toLocaleDateString()}</span>
-                            <span>🕐 {new Date(appointment.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            {appointment.price && <span>💰 ${appointment.price}</span>}
+                          <div className="flex items-center gap-4 text-sm text-zinc-400">
+                            <span className="flex items-center gap-1.5">
+                              <CalendarIcon className="w-3.5 h-3.5" />
+                              {new Date(appointment.scheduledTime).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <ClockIcon className="w-3.5 h-3.5" />
+                              {new Date(appointment.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {appointment.price && (
+                              <span className="flex items-center gap-1.5">
+                                <CurrencyDollarIcon className="w-3.5 h-3.5" />
+                                ${appointment.price}
+                              </span>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -323,10 +333,10 @@ export default function Customers() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              <div className="p-6 border-t border-zinc-800 flex gap-3">
                 <button
                   onClick={() => setSelectedCustomer(null)}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800/50 transition-colors"
                 >
                   Close
                 </button>

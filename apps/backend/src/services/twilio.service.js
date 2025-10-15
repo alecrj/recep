@@ -28,24 +28,18 @@ class TwilioService {
   /**
    * Generate TwiML response for incoming call
    */
-  generateIncomingCallTwiML(businessName, streamUrl) {
+  generateIncomingCallTwiML(businessName, streamUrl, callSid) {
     const VoiceResponse = twilio.twiml.VoiceResponse;
     const response = new VoiceResponse();
 
-    // Start the call with a brief greeting while we set up streaming
-    response.say({
-      voice: 'Polly.Joanna'
-    }, `Hello, connecting you now.`);
-
-    // Start bidirectional media stream
-    const start = response.start();
-    start.stream({
+    // Connect the call to a bidirectional media stream
+    const connect = response.connect();
+    const stream = connect.stream({
       url: streamUrl,
-      track: 'both_tracks' // Send and receive audio
     });
 
-    // Pause to keep the call alive while streaming
-    response.pause({ length: 60 });
+    // Pass callSid as parameter that will be available in stream
+    stream.parameter({ name: 'callSid', value: callSid });
 
     return response.toString();
   }
@@ -317,6 +311,207 @@ ${paymentDetails.paymentUrl}
 This link expires in 24 hours.`;
 
     return this.sendSMS(phone, message);
+  }
+
+  /**
+   * Search for available phone numbers by area code
+   */
+  async searchAvailableNumbers(areaCode, region = 'US') {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would search for available numbers', {
+        areaCode,
+        region,
+      });
+      // Return mock phone numbers for testing
+      return [
+        {
+          phoneNumber: `+1${areaCode}5551001`,
+          friendlyName: `(${areaCode}) 555-1001`,
+          locality: 'Test City',
+          region: region,
+          capabilities: { voice: true, sms: true, mms: false },
+        },
+        {
+          phoneNumber: `+1${areaCode}5551002`,
+          friendlyName: `(${areaCode}) 555-1002`,
+          locality: 'Test City',
+          region: region,
+          capabilities: { voice: true, sms: true, mms: false },
+        },
+      ];
+    }
+
+    try {
+      const numbers = await this.client.availablePhoneNumbers(region)
+        .local
+        .list({
+          areaCode: areaCode,
+          limit: 20,
+          voiceEnabled: true,
+          smsEnabled: true,
+        });
+
+      logger.info('Found available phone numbers', {
+        count: numbers.length,
+        areaCode,
+      });
+
+      return numbers.map(num => ({
+        phoneNumber: num.phoneNumber,
+        friendlyName: num.friendlyName,
+        locality: num.locality,
+        region: num.region,
+        capabilities: num.capabilities,
+      }));
+    } catch (error) {
+      logger.error('Failed to search for phone numbers', {
+        error: error.message,
+        areaCode,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Purchase a phone number from Twilio
+   */
+  async purchasePhoneNumber(phoneNumber) {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would purchase phone number', { phoneNumber });
+      return {
+        sid: 'TEST_PN_' + Date.now(),
+        phoneNumber: phoneNumber,
+        friendlyName: phoneNumber,
+        capabilities: { voice: true, sms: true, mms: false },
+        testMode: true,
+      };
+    }
+
+    try {
+      const purchasedNumber = await this.client.incomingPhoneNumbers.create({
+        phoneNumber: phoneNumber,
+        voiceUrl: `${config.BASE_URL}/api/twilio/voice`,
+        voiceMethod: 'POST',
+        statusCallback: `${config.BASE_URL}/api/twilio/status`,
+        statusCallbackMethod: 'POST',
+        smsUrl: `${config.BASE_URL}/api/twilio/sms`,
+        smsMethod: 'POST',
+      });
+
+      logger.info('Phone number purchased successfully', {
+        sid: purchasedNumber.sid,
+        phoneNumber: purchasedNumber.phoneNumber,
+      });
+
+      return {
+        sid: purchasedNumber.sid,
+        phoneNumber: purchasedNumber.phoneNumber,
+        friendlyName: purchasedNumber.friendlyName,
+        capabilities: purchasedNumber.capabilities,
+      };
+    } catch (error) {
+      logger.error('Failed to purchase phone number', {
+        error: error.message,
+        phoneNumber,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update phone number webhook URLs
+   */
+  async updatePhoneNumberWebhooks(phoneNumberSid, webhookUrls) {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would update phone number webhooks', {
+        phoneNumberSid,
+        webhookUrls,
+      });
+      return { testMode: true };
+    }
+
+    try {
+      const updated = await this.client.incomingPhoneNumbers(phoneNumberSid).update({
+        voiceUrl: webhookUrls.voiceUrl || `${config.BASE_URL}/api/twilio/voice`,
+        voiceMethod: 'POST',
+        statusCallback: webhookUrls.statusCallback || `${config.BASE_URL}/api/twilio/status`,
+        statusCallbackMethod: 'POST',
+        smsUrl: webhookUrls.smsUrl || `${config.BASE_URL}/api/twilio/sms`,
+        smsMethod: 'POST',
+      });
+
+      logger.info('Phone number webhooks updated', {
+        sid: phoneNumberSid,
+      });
+
+      return updated;
+    } catch (error) {
+      logger.error('Failed to update phone number webhooks', {
+        error: error.message,
+        phoneNumberSid,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Release/delete a phone number from Twilio account
+   */
+  async releasePhoneNumber(phoneNumberSid) {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would release phone number', { phoneNumberSid });
+      return { testMode: true };
+    }
+
+    try {
+      await this.client.incomingPhoneNumbers(phoneNumberSid).remove();
+
+      logger.info('Phone number released', {
+        sid: phoneNumberSid,
+      });
+
+      return { success: true };
+    } catch (error) {
+      logger.error('Failed to release phone number', {
+        error: error.message,
+        phoneNumberSid,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get list of all purchased phone numbers
+   */
+  async listPhoneNumbers() {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would list phone numbers');
+      return [
+        {
+          sid: 'TEST_PN_001',
+          phoneNumber: '+15555551001',
+          friendlyName: '(555) 555-1001',
+          testMode: true,
+        },
+      ];
+    }
+
+    try {
+      const numbers = await this.client.incomingPhoneNumbers.list();
+
+      return numbers.map(num => ({
+        sid: num.sid,
+        phoneNumber: num.phoneNumber,
+        friendlyName: num.friendlyName,
+        voiceUrl: num.voiceUrl,
+        smsUrl: num.smsUrl,
+      }));
+    } catch (error) {
+      logger.error('Failed to list phone numbers', {
+        error: error.message,
+      });
+      throw error;
+    }
   }
 }
 

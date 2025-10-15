@@ -6,10 +6,12 @@ const twilioService = require('../services/twilio.service');
 const deepgramService = require('../services/deepgram.service');
 const openaiService = require('../services/openai.service');
 const elevenlabsService = require('../services/elevenlabs.service');
+const audioService = require('../services/audio.service');
 
 const ConversationHandler = require('../ai/conversationHandler');
 const PromptBuilder = require('../ai/promptBuilder');
 const actionExecutor = require('../ai/actionExecutor');
+const activeCalls = require('../utils/activeCalls');
 
 const router = express.Router();
 
@@ -22,9 +24,6 @@ const router = express.Router();
  * - AI conversation orchestration
  * - Action execution (booking, transfer, etc.)
  */
-
-// Store active call sessions in memory
-const activeCalls = new Map();
 
 // ============================================
 // INCOMING CALL WEBHOOK (Twilio hits this)
@@ -90,9 +89,9 @@ router.post('/incoming', async (req, res) => {
       startTime: Date.now(),
     });
 
-    // Generate TwiML response to start streaming
-    const streamUrl = `wss://${req.get('host')}/api/calls/stream?callSid=${CallSid}`;
-    const twiml = twilioService.generateIncomingCallTwiML(business.name, streamUrl);
+    // Generate TwiML response to start streaming (no query params needed)
+    const streamUrl = `wss://${req.get('host')}/api/calls/stream`;
+    const twiml = twilioService.generateIncomingCallTwiML(business.name, streamUrl, CallSid);
 
     logger.info('Call initialized', {
       callSid: CallSid,
@@ -168,74 +167,15 @@ router.post('/status', async (req, res) => {
 // ============================================
 
 router.ws('/stream', async (ws, req) => {
-  const callSid = req.query.callSid;
-
-  logger.info('WebSocket stream connected', { callSid });
-
-  if (!callSid) {
-    logger.error('No callSid provided in stream connection');
-    ws.close();
-    return;
-  }
-
-  const callData = activeCalls.get(callSid);
-
-  if (!callData) {
-    logger.error('No active call found for stream', { callSid });
-    ws.close();
-    return;
-  }
-
-  // Initialize Deepgram connection
-  const deepgramConnection = deepgramService.createLiveTranscription();
-
-  // Initialize prompt builder
-  const promptBuilder = new PromptBuilder(callData.business.config, callData.conversation);
-
-  // Buffer for accumulating user speech
+  let callSid = null;
+  let callData = null;
+  let promptBuilder = null;
+  let deepgramConnection = null;
+  let streamSid = null;
   let userSpeechBuffer = '';
   let isProcessing = false;
 
-  // Setup Deepgram handlers
-  deepgramService.setupTranscriptionHandlers(deepgramConnection, {
-    onTranscript: async ({ text, isFinal, speechFinal }) => {
-      if (!isFinal) {
-        // Interim result - just log
-        logger.debug('Interim transcript', { text: text.substring(0, 50) });
-        return;
-      }
-
-      // Final transcript - add to buffer
-      userSpeechBuffer += text + ' ';
-      callData.transcript.push(`User: ${text}`);
-
-      // If speech is final (user stopped speaking), process it
-      if (speechFinal && !isProcessing) {
-        isProcessing = true;
-        await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder);
-        userSpeechBuffer = '';
-        isProcessing = false;
-      }
-    },
-
-    onUtteranceEnd: async () => {
-      // User finished speaking
-      if (userSpeechBuffer && !isProcessing) {
-        isProcessing = true;
-        await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder);
-        userSpeechBuffer = '';
-        isProcessing = false;
-      }
-    },
-
-    onError: (error) => {
-      logger.error('Deepgram error', { error: error.message, callSid });
-    },
-
-    onClose: () => {
-      logger.info('Deepgram connection closed', { callSid });
-    },
-  });
+  logger.info('WebSocket stream connected');
 
   // Handle incoming WebSocket messages from Twilio
   ws.on('message', async (message) => {
@@ -244,28 +184,94 @@ router.ws('/stream', async (ws, req) => {
 
       switch (data.event) {
         case 'start':
+          // Extract callSid from custom parameters
+          callSid = data.start?.customParameters?.callSid;
+          streamSid = data.start?.streamSid;
+
           logger.info('Media stream started', {
             callSid,
-            streamSid: data.start?.streamSid,
+            streamSid,
+          });
+
+          if (!callSid) {
+            logger.error('No callSid in stream start event');
+            ws.close();
+            return;
+          }
+
+          // Get call data from active calls
+          callData = activeCalls.get(callSid);
+
+          if (!callData) {
+            logger.error('No active call found for stream', { callSid });
+            ws.close();
+            return;
+          }
+
+          // Initialize Deepgram connection
+          deepgramConnection = deepgramService.createLiveTranscription();
+
+          // Initialize prompt builder
+          promptBuilder = new PromptBuilder(callData.business.config, callData.conversation);
+
+          // Setup Deepgram handlers
+          deepgramService.setupTranscriptionHandlers(deepgramConnection, {
+            onTranscript: async ({ text, isFinal, speechFinal }) => {
+              if (!isFinal) {
+                logger.debug('Interim transcript', { text: text.substring(0, 50) });
+                return;
+              }
+
+              userSpeechBuffer += text + ' ';
+              callData.transcript.push(`User: ${text}`);
+
+              if (speechFinal && !isProcessing) {
+                isProcessing = true;
+                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid);
+                userSpeechBuffer = '';
+                isProcessing = false;
+              }
+            },
+
+            onUtteranceEnd: async () => {
+              if (userSpeechBuffer && !isProcessing) {
+                isProcessing = true;
+                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid);
+                userSpeechBuffer = '';
+                isProcessing = false;
+              }
+            },
+
+            onError: (error) => {
+              logger.error('Deepgram error', { error: error.message, callSid });
+            },
+
+            onClose: () => {
+              logger.info('Deepgram connection closed', { callSid });
+            },
           });
 
           // Send initial greeting
           await sendAIResponse(
             callData.conversation.getInstantResponse() || "Hello, how can I help you?",
             callData,
-            ws
+            ws,
+            streamSid
           );
           break;
 
         case 'media':
-          // Forward audio to Deepgram
-          const audioPayload = Buffer.from(data.media.payload, 'base64');
-          await deepgramService.processAudioChunk(deepgramConnection, audioPayload);
+          if (deepgramConnection) {
+            const audioPayload = Buffer.from(data.media.payload, 'base64');
+            await deepgramService.processAudioChunk(deepgramConnection, audioPayload);
+          }
           break;
 
         case 'stop':
           logger.info('Media stream stopped', { callSid });
-          deepgramService.closeConnection(deepgramConnection);
+          if (deepgramConnection) {
+            deepgramService.closeConnection(deepgramConnection);
+          }
           break;
 
         default:
@@ -299,7 +305,7 @@ router.ws('/stream', async (ws, req) => {
 /**
  * Process user speech and generate AI response
  */
-async function processUserSpeech(userText, callData, ws, promptBuilder) {
+async function processUserSpeech(userText, callData, ws, promptBuilder, streamSid) {
   const startTime = Date.now();
 
   logger.info('Processing user speech', {
@@ -349,12 +355,52 @@ async function processUserSpeech(userText, callData, ws, promptBuilder) {
         // Note: In production, you'd need to update the call via Twilio API
         logger.info('Call transfer initiated', { transferNumber: result.transferNumber });
       }
+
+      // If there's no text response but a function was called, generate one
+      if (!aiResponse.text && result.message) {
+        // Use the function result message as the response
+        aiResponse.text = result.message;
+        logger.info('Using function result message as response', { message: result.message });
+      } else if (!aiResponse.text) {
+        // If still no text, make another call to OpenAI with the function result
+        logger.info('No text response after function call, calling OpenAI again with result');
+
+        // Add function result to conversation
+        const functionResultMessage = {
+          role: 'function',
+          name: aiResponse.functionCall.name,
+          content: JSON.stringify(result),
+        };
+
+        const followUpMessages = [...messages, {
+          role: 'assistant',
+          content: null,
+          function_call: {
+            name: aiResponse.functionCall.name,
+            arguments: JSON.stringify(aiResponse.functionCall.arguments),
+          },
+        }, functionResultMessage];
+
+        // Get follow-up response from OpenAI
+        const followUpResponse = await openaiService.generateResponse(followUpMessages, []);
+
+        if (followUpResponse.text) {
+          aiResponse.text = followUpResponse.text;
+          logger.info('Got follow-up response from OpenAI', { text: followUpResponse.text });
+        }
+      }
     }
 
     // Send AI response back to caller
     if (aiResponse.text) {
       callData.conversation.addAITurn(aiResponse.text, aiResponse.intent);
-      await sendAIResponse(aiResponse.text, callData, ws);
+      await sendAIResponse(aiResponse.text, callData, ws, streamSid);
+    } else {
+      // Last resort fallback
+      logger.warn('No response text available after all attempts');
+      const fallbackText = "Let me check on that for you. One moment...";
+      callData.conversation.addAITurn(fallbackText, aiResponse.intent);
+      await sendAIResponse(fallbackText, callData, ws, streamSid);
     }
   } catch (error) {
     logger.error('Error processing user speech', {
@@ -367,7 +413,8 @@ async function processUserSpeech(userText, callData, ws, promptBuilder) {
     await sendAIResponse(
       "I'm sorry, I'm having trouble right now. Let me transfer you to someone who can help.",
       callData,
-      ws
+      ws,
+      streamSid
     );
   }
 }
@@ -375,50 +422,71 @@ async function processUserSpeech(userText, callData, ws, promptBuilder) {
 /**
  * Send AI text response as speech to caller
  */
-async function sendAIResponse(text, callData, ws) {
+async function sendAIResponse(text, callData, ws, streamSid) {
   try {
+    // Check if we have streamSid (needed to send audio back)
+    if (!streamSid) {
+      logger.warn('No streamSid available - cannot send audio', {
+        callSid: callData.call.callSid,
+      });
+      return;
+    }
+
+    const startTime = Date.now();
+
     // Optimize text for speech
     const optimizedText = elevenlabsService.optimizeTextForSpeech(text);
 
-    // Convert to speech
+    // Convert to speech (MP3 from ElevenLabs)
     const voiceId = callData.business.config?.aiVoiceId;
     const audioResult = await elevenlabsService.textToSpeech(optimizedText, voiceId);
 
     // Add to transcript
     callData.transcript.push(`AI: ${text}`);
 
-    // Send audio to Twilio via WebSocket
-    // In production, you'd stream this audio back through Twilio's media stream
-    // For now, we log it
-    logger.info('AI response ready', {
+    logger.info('AI speech generated', {
       text: text.substring(0, 100),
-      audioSize: audioResult.audio.length,
+      mp3Size: audioResult.audio.length,
       callSid: callData.call.callSid,
+      ttsTime: Date.now() - startTime,
     });
 
     // Mark AI as speaking
     callData.conversation.setAISpeaking(true);
 
-    // In a real implementation, you would:
-    // 1. Encode audio as base64
-    // 2. Send via WebSocket to Twilio
-    // 3. Twilio plays it to the caller
-    // ws.send(JSON.stringify({
-    //   event: 'media',
-    //   media: {
-    //     payload: audioResult.audio.toString('base64')
-    //   }
-    // }));
+    // Convert MP3 to μ-law
+    const conversionStartTime = Date.now();
+    const mulawBuffer = await audioService.convertMP3ForTwilio(audioResult.audio);
 
-    // Mark AI as done speaking after duration
-    setTimeout(() => {
-      callData.conversation.setAISpeaking(false);
-    }, Math.max(2000, text.length * 50)); // Rough estimate: 50ms per character
+    const conversionTime = Date.now() - conversionStartTime;
+
+    // Send audio to Twilio via WebSocket
+    const sendStartTime = Date.now();
+    await audioService.sendAudioToTwilio(ws, mulawBuffer, streamSid);
+
+    const sendTime = Date.now() - sendStartTime;
+    const totalTime = Date.now() - startTime;
+
+    logger.info('AI response fully sent', {
+      text: text.substring(0, 100),
+      totalTime,
+      ttsTime: Date.now() - startTime,
+      conversionTime,
+      sendTime,
+      callSid: callData.call.callSid,
+    });
+
+    // Mark AI as done speaking
+    callData.conversation.setAISpeaking(false);
   } catch (error) {
     logger.error('Error sending AI response', {
       error: error.message,
+      stack: error.stack,
       callSid: callData.call.callSid,
     });
+
+    // Mark AI as done speaking even on error
+    callData.conversation.setAISpeaking(false);
   }
 }
 

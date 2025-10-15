@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { CalendarIcon, ClockIcon, CurrencyDollarIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import api from '../lib/api';
 
 const STATUS_COLUMNS = [
@@ -52,9 +53,9 @@ export default function Appointments() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Appointments</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your appointments with drag-and-drop</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-display font-bold text-white tracking-tight">Appointments</h1>
+          <p className="text-zinc-400 text-sm">Manage your appointments with drag-and-drop</p>
         </div>
         <button className="btn-primary">
           + New Appointment
@@ -74,8 +75,8 @@ export default function Appointments() {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`bg-gray-50 dark:bg-gray-900 rounded-xl p-4 min-h-[600px] transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-gray-100 dark:bg-gray-800' : ''
+                    className={`bg-zinc-900 rounded-xl p-4 min-h-[600px] transition-colors border border-zinc-800 ${
+                      snapshot.isDraggingOver ? 'bg-zinc-800' : ''
                     }`}
                   >
                     {/* Column Header */}
@@ -92,10 +93,10 @@ export default function Appointments() {
                               '#ef4444'
                           }}
                         />
-                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                        <h3 className="font-display font-semibold text-white text-sm">
                           {column.label}
                         </h3>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 px-2 py-0.5 rounded-full">
+                        <span className="text-xs text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full">
                           {groupedAppointments[column.id]?.length || 0}
                         </span>
                       </div>
@@ -115,31 +116,31 @@ export default function Appointments() {
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
                               onClick={() => setSelectedAppointment(appointment)}
-                              className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all cursor-pointer ${
+                              className={`bg-zinc-900 rounded-lg p-4 shadow-sm border border-zinc-800 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300 cursor-pointer ${
                                 snapshot.isDragging ? 'shadow-lg ring-2 ring-green-500 rotate-2' : ''
                               }`}
                             >
                               {/* Customer Name */}
                               <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-semibold text-gray-900 dark:text-white text-sm">
+                                <h4 className="font-semibold text-white text-sm">
                                   {appointment.customer?.name || 'Unknown Customer'}
                                 </h4>
                               </div>
 
                               {/* Service Type */}
                               {appointment.serviceType && (
-                                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                <p className="text-xs text-zinc-400 mb-2">
                                   {appointment.serviceType}
                                 </p>
                               )}
 
                               {/* Date & Time */}
-                              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                <span>📅</span>
+                              <div className="flex items-center gap-1.5 text-xs text-zinc-400 mb-2">
+                                <CalendarIcon className="w-3.5 h-3.5" />
                                 <span>{new Date(appointment.scheduledTime).toLocaleDateString()}</span>
                               </div>
-                              <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                <span>🕐</span>
+                              <div className="flex items-center gap-1.5 text-xs text-zinc-400 mb-3">
+                                <ClockIcon className="w-3.5 h-3.5" />
                                 <span>{new Date(appointment.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 <span className="mx-1">·</span>
                                 <span>{appointment.duration || 30} min</span>
@@ -147,8 +148,8 @@ export default function Appointments() {
 
                               {/* Price */}
                               {appointment.price && (
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                                  <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
+                                  <span className="text-xs font-semibold text-white">
                                     ${appointment.price}
                                   </span>
                                 </div>
@@ -156,8 +157,9 @@ export default function Appointments() {
 
                               {/* Phone */}
                               {appointment.customer?.phone && (
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                  📞 {appointment.customer.phone}
+                                <div className="flex items-center gap-1.5 text-xs text-zinc-400 mt-2">
+                                  <PhoneIcon className="w-3.5 h-3.5" />
+                                  {appointment.customer.phone}
                                 </div>
                               )}
                             </div>
@@ -169,7 +171,7 @@ export default function Appointments() {
 
                     {/* Empty State */}
                     {groupedAppointments[column.id]?.length === 0 && (
-                      <div className="text-center py-8 text-gray-400 dark:text-gray-600 text-sm">
+                      <div className="text-center py-8 text-zinc-500 text-sm">
                         No appointments
                       </div>
                     )}
@@ -189,16 +191,16 @@ export default function Appointments() {
             onClick={() => setSelectedAppointment(null)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+            <div className="bg-zinc-900 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden border border-zinc-800">
               {/* Modal Header */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-6 border-b border-zinc-800">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-display font-semibold text-white">
                     Appointment Details
                   </h3>
                   <button
                     onClick={() => setSelectedAppointment(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="text-zinc-400 hover:text-zinc-300 transition-colors"
                   >
                     <span className="text-2xl">×</span>
                   </button>
@@ -208,41 +210,41 @@ export default function Appointments() {
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Customer</p>
-                  <p className="text-gray-900 dark:text-white text-lg">
+                  <p className="text-sm font-medium text-zinc-400">Customer</p>
+                  <p className="text-white text-lg">
                     {selectedAppointment.customer?.name || 'Unknown'}
                   </p>
                   {selectedAppointment.customer?.phone && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-zinc-400">
                       {selectedAppointment.customer.phone}
                     </p>
                   )}
                   {selectedAppointment.customer?.email && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-zinc-400">
                       {selectedAppointment.customer.email}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Service</p>
-                  <p className="text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-zinc-400">Service</p>
+                  <p className="text-white">
                     {selectedAppointment.serviceType || 'N/A'}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Date & Time</p>
-                  <p className="text-gray-900 dark:text-white">
+                  <p className="text-sm font-medium text-zinc-400">Date & Time</p>
+                  <p className="text-white">
                     {new Date(selectedAppointment.scheduledTime).toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-zinc-400">
                     Duration: {selectedAppointment.duration || 30} minutes
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Status</p>
+                  <p className="text-sm font-medium text-zinc-400">Status</p>
                   <span
                     className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
                       selectedAppointment.status === 'CONFIRMED'
@@ -252,7 +254,7 @@ export default function Appointments() {
                         : selectedAppointment.status === 'IN_PROGRESS'
                         ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
                         : selectedAppointment.status === 'COMPLETED'
-                        ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        ? 'bg-zinc-800 text-zinc-300'
                         : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                     }`}
                   >
@@ -262,8 +264,8 @@ export default function Appointments() {
 
                 {selectedAppointment.price && (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Price</p>
-                    <p className="text-gray-900 dark:text-white text-lg font-semibold">
+                    <p className="text-sm font-medium text-zinc-400">Price</p>
+                    <p className="text-white text-lg font-semibold">
                       ${selectedAppointment.price}
                     </p>
                   </div>
@@ -271,8 +273,8 @@ export default function Appointments() {
 
                 {selectedAppointment.notes && (
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</p>
-                    <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                    <p className="text-sm font-medium text-zinc-400">Notes</p>
+                    <p className="text-white whitespace-pre-wrap">
                       {selectedAppointment.notes}
                     </p>
                   </div>
@@ -280,10 +282,10 @@ export default function Appointments() {
               </div>
 
               {/* Modal Footer */}
-              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+              <div className="p-6 border-t border-zinc-800 flex gap-3">
                 <button
                   onClick={() => setSelectedAppointment(null)}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800/50 transition-colors"
                 >
                   Close
                 </button>

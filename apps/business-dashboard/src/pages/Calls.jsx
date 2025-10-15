@@ -42,22 +42,22 @@ export default function Calls() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Calls</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">View and manage all incoming calls</p>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-display font-bold text-white tracking-tight">Calls</h1>
+        <p className="text-zinc-400 text-sm">View and manage all incoming calls</p>
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               Outcome
             </label>
             <select
               value={filters.outcome}
               onChange={(e) => handleFilterChange('outcome', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">All Outcomes</option>
               <option value="APPOINTMENT_BOOKED">Appointment Booked</option>
@@ -69,33 +69,33 @@ export default function Calls() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               Start Date
             </label>
             <input
               type="date"
               value={filters.startDate}
               onChange={(e) => handleFilterChange('startDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-zinc-400 mb-2">
               End Date
             </label>
             <input
               type="date"
               value={filters.endDate}
               onChange={(e) => handleFilterChange('endDate', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
         </div>
       </div>
 
       {/* Calls Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-zinc-900 rounded-xl shadow-sm overflow-hidden border border-zinc-800">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
@@ -103,43 +103,43 @@ export default function Calls() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900">
+              <table className="min-w-full divide-y divide-zinc-800">
+                <thead className="bg-zinc-900">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Time
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Customer
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Duration
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Outcome
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="divide-y divide-zinc-800">
                   {data?.calls?.map((call) => (
-                    <tr key={call.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <tr key={call.id} className="hover:bg-zinc-800/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                         {new Date(call.startedAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-sm font-medium text-white">
                             {call.customer?.name || 'Unknown'}
                           </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                          <div className="text-sm text-zinc-400">
                             {call.customer?.phone || call.callerPhone}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
                         {call.durationSeconds
                           ? `${Math.floor(call.durationSeconds / 60)}:${(call.durationSeconds % 60)
                               .toString()
@@ -155,7 +155,7 @@ export default function Calls() {
                               ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400'
                               : call.outcome === 'EMERGENCY_FLAGGED'
                               ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              : 'bg-zinc-800 text-zinc-300'
                           }`}
                         >
                           {call.outcome?.replace(/_/g, ' ')}
@@ -164,7 +164,7 @@ export default function Calls() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <button
                           onClick={() => setSelectedCall(call.id)}
-                          className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
+                          className="text-green-400 hover:text-green-300 font-medium transition-colors"
                         >
                           View Transcript
                         </button>
@@ -177,22 +177,22 @@ export default function Calls() {
 
             {/* Pagination */}
             {data?.pagination && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="text-sm text-gray-700 dark:text-gray-300">
+              <div className="flex items-center justify-between px-6 py-4 border-t border-zinc-800">
+                <div className="text-sm text-zinc-400">
                   Showing page {data.pagination.page} of {data.pagination.totalPages} ({data.pagination.total} total)
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
                   <button
                     onClick={() => setPage((p) => p + 1)}
                     disabled={page >= data.pagination.totalPages}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 text-sm font-medium text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>
@@ -208,35 +208,35 @@ export default function Calls() {
         <>
           <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setSelectedCall(null)} />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="bg-zinc-900 rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden border border-zinc-800">
+              <div className="p-6 border-b border-zinc-800">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Call Transcript</h3>
+                  <h3 className="text-lg font-display font-semibold text-white">Call Transcript</h3>
                   <button
                     onClick={() => setSelectedCall(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="text-zinc-400 hover:text-zinc-300 transition-colors"
                   >
                     <span className="text-2xl">×</span>
                   </button>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                <p className="text-sm text-zinc-400 mt-1">
                   {new Date(callDetails.call.startedAt).toLocaleString()}
                 </p>
               </div>
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Customer</p>
-                    <p className="text-gray-900 dark:text-white">{callDetails.call.customer?.name || 'Unknown'}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{callDetails.call.customer?.phone || callDetails.call.callerPhone}</p>
+                    <p className="text-sm font-medium text-zinc-400">Customer</p>
+                    <p className="text-white">{callDetails.call.customer?.name || 'Unknown'}</p>
+                    <p className="text-sm text-zinc-400">{callDetails.call.customer?.phone || callDetails.call.callerPhone}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Outcome</p>
-                    <p className="text-gray-900 dark:text-white">{callDetails.call.outcome?.replace(/_/g, ' ')}</p>
+                    <p className="text-sm font-medium text-zinc-400">Outcome</p>
+                    <p className="text-white">{callDetails.call.outcome?.replace(/_/g, ' ')}</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Transcript</p>
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
+                    <p className="text-sm font-medium text-zinc-400 mb-2">Transcript</p>
+                    <div className="bg-zinc-900 rounded-lg p-4 text-sm text-white whitespace-pre-wrap border border-zinc-800">
                       {callDetails.call.transcript || 'No transcript available'}
                     </div>
                   </div>

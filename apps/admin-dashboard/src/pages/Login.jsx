@@ -33,16 +33,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Receptionist</h1>
-          <p className="text-gray-600">Admin Dashboard</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-green-600 rounded-xl mb-4 shadow-lg shadow-green-500/20">
+            <span className="text-2xl font-bold text-white">V</span>
+          </div>
+          <h1 className="text-3xl font-bold text-white mb-2">Voxi Admin</h1>
+          <p className="text-zinc-400">Platform Dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-900/20 border border-red-800 text-red-400 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -54,7 +57,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="input"
-              placeholder="admin@airec.com"
+              placeholder="admin@voxi.com"
               required
               autoFocus
             />
@@ -81,10 +84,10 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-600 text-center">
+        <div className="mt-6 pt-6 border-t border-zinc-800">
+          <p className="text-sm text-zinc-500 text-center">
             Demo credentials:<br />
-            <span className="font-mono text-xs">admin@airec.com / ChangeMe123!</span>
+            <span className="font-mono text-xs text-zinc-400">admin@airec.com / ChangeMe123!</span>
           </p>
         </div>
       </div>

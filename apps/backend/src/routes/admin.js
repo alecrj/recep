@@ -39,43 +39,76 @@ router.use(authMiddleware.requireAdmin);
  */
 router.get('/dashboard', async (req, res) => {
   try {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
     // Get overall platform stats
     const [
       totalBusinesses,
       activeBusinesses,
       totalCalls,
+      callsThisMonth,
       totalAppointments,
       totalRevenue,
+      activePhoneNumbers,
+      recentBusinesses,
       recentCalls,
     ] = await Promise.all([
       prisma.business.count(),
       prisma.business.count({ where: { status: 'ACTIVE' } }),
       prisma.call.count(),
+      prisma.call.count({
+        where: {
+          startedAt: { gte: startOfMonth },
+        },
+      }),
       prisma.appointment.count(),
       prisma.payment.aggregate({
         _sum: { amount: true },
         where: { status: 'COMPLETED' },
       }),
+      prisma.phoneNumber.count({ where: { status: 'ASSIGNED' } }),
+      prisma.business.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          ownerEmail: true,
+          createdAt: true,
+        },
+      }),
       prisma.call.findMany({
-        take: 10,
+        take: 5,
         orderBy: { startedAt: 'desc' },
-        include: {
-          business: { select: { name: true } },
+        select: {
+          id: true,
+          fromNumber: true,
+          startedAt: true,
+          outcome: true,
+          business: {
+            select: { name: true },
+          },
         },
       }),
     ]);
 
-    // Get calls by status
-    const callsByOutcome = await prisma.call.groupBy({
-      by: ['outcome'],
-      _count: true,
-    });
+    // Calculate MRR (assuming $99/mo per active business - adjust as needed)
+    const mrr = activeBusinesses * 99;
+    const arr = mrr * 12;
 
-    // Get businesses by plan
-    const businessesByPlan = await prisma.business.groupBy({
-      by: ['plan'],
-      _count: true,
+    // Calculate success rate
+    const completedCalls = await prisma.call.count({
+      where: {
+        outcome: {
+          in: ['APPOINTMENT_BOOKED', 'MESSAGE_TAKEN', 'QUESTION_ANSWERED'],
+        },
+      },
     });
+    const avgSuccessRate = totalCalls > 0 ? Math.round((completedCalls / totalCalls) * 100) : 0;
 
     logger.info('Admin dashboard accessed', {
       adminId: req.user.id,
@@ -88,12 +121,20 @@ router.get('/dashboard', async (req, res) => {
         totalBusinesses,
         activeBusinesses,
         totalCalls,
+        callsThisMonth,
         totalAppointments,
-        totalRevenue: totalRevenue._sum.amount || 0,
+        avgSuccessRate,
+        mrr,
+        arr,
+        growthRate: 0, // TODO: Calculate based on historical data
       },
-      callsByOutcome,
-      businessesByPlan,
-      recentCalls,
+      recentBusinesses,
+      recentCalls: recentCalls.map(call => ({
+        ...call,
+        callerPhone: call.fromNumber,
+        status: call.outcome ? 'COMPLETED' : 'IN_PROGRESS',
+      })),
+      activePhoneNumbers,
     });
   } catch (error) {
     logger.error('Dashboard error', {
@@ -628,6 +669,320 @@ router.get('/system', async (req, res) => {
   } catch (error) {
     logger.error('System health error', { error: error.message });
     res.status(500).json({ error: 'Failed to get system health' });
+  }
+});
+
+// ============================================
+// PHONE NUMBER MANAGEMENT
+// ============================================
+
+/**
+ * List All Phone Numbers
+ */
+router.get('/phone-numbers', async (req, res) => {
+  try {
+    const { status, region, page = 1, limit = 50 } = req.query;
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (status) where.status = status;
+    if (region) where.region = region;
+
+    const [phoneNumbers, total] = await Promise.all([
+      prisma.phoneNumber.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.phoneNumber.count({ where }),
+    ]);
+
+    // Get counts by status
+    const statusCounts = await prisma.phoneNumber.groupBy({
+      by: ['status'],
+      _count: true,
+    });
+
+    res.json({
+      success: true,
+      phoneNumbers,
+      stats: {
+        total,
+        byStatus: statusCounts.reduce((acc, item) => {
+          acc[item.status] = item._count;
+          return acc;
+        }, {}),
+      },
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('List phone numbers error', { error: error.message });
+    res.status(500).json({ error: 'Failed to load phone numbers' });
+  }
+});
+
+/**
+ * Add Phone Number to Pool
+ */
+router.post('/phone-numbers', async (req, res) => {
+  try {
+    const { phoneNumber, twilioSid, friendlyName, region, capabilities } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Check if number already exists
+    const existing = await prisma.phoneNumber.findUnique({
+      where: { phoneNumber },
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Phone number already exists in pool' });
+    }
+
+    const number = await prisma.phoneNumber.create({
+      data: {
+        phoneNumber,
+        twilioSid,
+        friendlyName,
+        region,
+        capabilities: capabilities || { voice: true, sms: true, mms: false },
+        status: 'AVAILABLE',
+      },
+    });
+
+    logger.info('Phone number added to pool', {
+      phoneNumberId: number.id,
+      phoneNumber: number.phoneNumber,
+      adminId: req.user.id,
+    });
+
+    res.status(201).json({
+      success: true,
+      phoneNumber: number,
+    });
+  } catch (error) {
+    logger.error('Add phone number error', { error: error.message });
+    res.status(500).json({ error: 'Failed to add phone number' });
+  }
+});
+
+/**
+ * Assign Phone Number to Business
+ */
+router.post('/phone-numbers/:id/assign', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { businessId } = req.body;
+
+    if (!businessId) {
+      return res.status(400).json({ error: 'Business ID is required' });
+    }
+
+    // Check if phone number exists and is available
+    const phoneNumber = await prisma.phoneNumber.findUnique({
+      where: { id },
+    });
+
+    if (!phoneNumber) {
+      return res.status(404).json({ error: 'Phone number not found' });
+    }
+
+    if (phoneNumber.status !== 'AVAILABLE') {
+      return res.status(400).json({ error: 'Phone number is not available' });
+    }
+
+    // Check if business exists
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+    });
+
+    if (!business) {
+      return res.status(404).json({ error: 'Business not found' });
+    }
+
+    // Assign the number
+    const [updatedNumber, updatedBusiness] = await Promise.all([
+      prisma.phoneNumber.update({
+        where: { id },
+        data: {
+          businessId,
+          assignedAt: new Date(),
+          status: 'ASSIGNED',
+        },
+      }),
+      prisma.business.update({
+        where: { id: businessId },
+        data: {
+          twilioNumber: phoneNumber.phoneNumber,
+        },
+      }),
+    ]);
+
+    logger.info('Phone number assigned to business', {
+      phoneNumberId: id,
+      businessId,
+      phoneNumber: phoneNumber.phoneNumber,
+      adminId: req.user.id,
+    });
+
+    res.json({
+      success: true,
+      phoneNumber: updatedNumber,
+      business: updatedBusiness,
+      message: 'Phone number assigned successfully',
+    });
+  } catch (error) {
+    logger.error('Assign phone number error', { error: error.message });
+    res.status(500).json({ error: 'Failed to assign phone number' });
+  }
+});
+
+/**
+ * Unassign Phone Number from Business
+ */
+router.post('/phone-numbers/:id/unassign', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const phoneNumber = await prisma.phoneNumber.findUnique({
+      where: { id },
+    });
+
+    if (!phoneNumber) {
+      return res.status(404).json({ error: 'Phone number not found' });
+    }
+
+    if (phoneNumber.status !== 'ASSIGNED') {
+      return res.status(400).json({ error: 'Phone number is not assigned' });
+    }
+
+    // Unassign the number
+    const [updatedNumber] = await Promise.all([
+      prisma.phoneNumber.update({
+        where: { id },
+        data: {
+          businessId: null,
+          assignedAt: null,
+          status: 'AVAILABLE',
+        },
+      }),
+      phoneNumber.businessId ? prisma.business.update({
+        where: { id: phoneNumber.businessId },
+        data: {
+          twilioNumber: null,
+        },
+      }) : Promise.resolve(null),
+    ]);
+
+    logger.info('Phone number unassigned from business', {
+      phoneNumberId: id,
+      businessId: phoneNumber.businessId,
+      adminId: req.user.id,
+    });
+
+    res.json({
+      success: true,
+      phoneNumber: updatedNumber,
+      message: 'Phone number unassigned successfully',
+    });
+  } catch (error) {
+    logger.error('Unassign phone number error', { error: error.message });
+    res.status(500).json({ error: 'Failed to unassign phone number' });
+  }
+});
+
+/**
+ * Delete Phone Number from Pool
+ */
+router.delete('/phone-numbers/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const phoneNumber = await prisma.phoneNumber.findUnique({
+      where: { id },
+    });
+
+    if (!phoneNumber) {
+      return res.status(404).json({ error: 'Phone number not found' });
+    }
+
+    if (phoneNumber.status === 'ASSIGNED') {
+      return res.status(400).json({
+        error: 'Cannot delete assigned phone number. Unassign it first.'
+      });
+    }
+
+    await prisma.phoneNumber.delete({
+      where: { id },
+    });
+
+    logger.warn('Phone number deleted from pool', {
+      phoneNumberId: id,
+      phoneNumber: phoneNumber.phoneNumber,
+      adminId: req.user.id,
+    });
+
+    res.json({
+      success: true,
+      message: 'Phone number deleted successfully',
+    });
+  } catch (error) {
+    logger.error('Delete phone number error', { error: error.message });
+    res.status(500).json({ error: 'Failed to delete phone number' });
+  }
+});
+
+/**
+ * Purchase Phone Number from Twilio
+ */
+router.post('/phone-numbers/purchase', async (req, res) => {
+  try {
+    const { areaCode, region } = req.body;
+
+    // Search for available numbers
+    const availableNumbers = await twilioService.searchAvailableNumbers(areaCode, region);
+
+    if (!availableNumbers || availableNumbers.length === 0) {
+      return res.status(404).json({ error: 'No available numbers found in this area' });
+    }
+
+    // Purchase the first available number
+    const purchasedNumber = await twilioService.purchasePhoneNumber(availableNumbers[0]);
+
+    // Add to database pool
+    const phoneNumber = await prisma.phoneNumber.create({
+      data: {
+        phoneNumber: purchasedNumber.phoneNumber,
+        twilioSid: purchasedNumber.sid,
+        friendlyName: `${region || 'US'} Number`,
+        region: region || 'US',
+        capabilities: purchasedNumber.capabilities,
+        status: 'AVAILABLE',
+      },
+    });
+
+    logger.info('Phone number purchased from Twilio', {
+      phoneNumberId: phoneNumber.id,
+      phoneNumber: phoneNumber.phoneNumber,
+      adminId: req.user.id,
+    });
+
+    res.status(201).json({
+      success: true,
+      phoneNumber,
+      message: 'Phone number purchased successfully',
+    });
+  } catch (error) {
+    logger.error('Purchase phone number error', { error: error.message });
+    res.status(500).json({ error: error.message || 'Failed to purchase phone number' });
   }
 });
 

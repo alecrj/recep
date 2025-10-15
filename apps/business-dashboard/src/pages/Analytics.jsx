@@ -15,6 +15,14 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import {
+  ChartBarIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
+  StarIcon,
+  LightBulbIcon,
+  CalendarDaysIcon
+} from '@heroicons/react/24/outline';
 import api from '../lib/api';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -83,14 +91,14 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Analytics</h2>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Track your performance and insights</p>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-display font-bold text-white tracking-tight">Analytics</h1>
+          <p className="text-zinc-400 text-sm">Track your performance and insights</p>
         </div>
         <select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
-          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          className="px-4 py-2 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
         >
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
@@ -101,48 +109,48 @@ export default function Analytics() {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</p>
-            <span className="text-2xl">📈</span>
+            <p className="text-sm font-medium text-zinc-400">Conversion Rate</p>
+            <ChartBarIcon className="w-6 h-6 text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{analytics?.conversionRate || '45%'}</p>
-          <p className="text-sm text-green-600 dark:text-green-400 mt-2">+5.3% from last period</p>
+          <p className="text-3xl font-bold text-white">{analytics?.conversionRate || '45%'}</p>
+          <p className="text-sm text-green-400 mt-2">+5.3% from last period</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Call Duration</p>
-            <span className="text-2xl">⏱️</span>
+            <p className="text-sm font-medium text-zinc-400">Avg Call Duration</p>
+            <ClockIcon className="w-6 h-6 text-cyan-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{analytics?.avgCallDuration || '3:42'}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">minutes</p>
+          <p className="text-3xl font-bold text-white">{analytics?.avgCallDuration || '3:42'}</p>
+          <p className="text-sm text-zinc-400 mt-2">minutes</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Est. Revenue</p>
-            <span className="text-2xl">💰</span>
+            <p className="text-sm font-medium text-zinc-400">Est. Revenue</p>
+            <CurrencyDollarIcon className="w-6 h-6 text-emerald-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">${analytics?.estimatedRevenue || '8,500'}</p>
-          <p className="text-sm text-green-600 dark:text-green-400 mt-2">+12.8% from last period</p>
+          <p className="text-3xl font-bold text-white">${analytics?.estimatedRevenue || '8,500'}</p>
+          <p className="text-sm text-green-400 mt-2">+12.8% from last period</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800 hover:shadow-lg hover:shadow-green-500/10 transition-all duration-300">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Satisfaction</p>
-            <span className="text-2xl">⭐</span>
+            <p className="text-sm font-medium text-zinc-400">Customer Satisfaction</p>
+            <StarIcon className="w-6 h-6 text-yellow-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white">{analytics?.satisfaction || '4.8'}/5</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">from 156 responses</p>
+          <p className="text-3xl font-bold text-white">{analytics?.satisfaction || '4.8'}/5</p>
+          <p className="text-sm text-zinc-400 mt-2">from 156 responses</p>
         </div>
       </div>
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Call Volume Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Call Volume</h3>
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
+          <h3 className="text-lg font-display font-semibold text-white mb-4">Call Volume</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={callVolumeData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -170,8 +178,8 @@ export default function Analytics() {
         </div>
 
         {/* Call Outcomes Pie Chart */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Call Outcomes</h3>
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
+          <h3 className="text-lg font-display font-semibold text-white mb-4">Call Outcomes</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -201,8 +209,8 @@ export default function Analytics() {
         </div>
 
         {/* Revenue Trend */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
+          <h3 className="text-lg font-display font-semibold text-white mb-4">Revenue Trend</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -223,8 +231,8 @@ export default function Analytics() {
         </div>
 
         {/* Peak Hours */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Peak Call Hours</h3>
+        <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
+          <h3 className="text-lg font-display font-semibold text-white mb-4">Peak Call Hours</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={peakHoursData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -245,30 +253,30 @@ export default function Analytics() {
       </div>
 
       {/* Insights */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-sm p-6 text-white">
-        <h3 className="text-xl font-bold mb-4">Key Insights</h3>
+      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-sm p-6 text-white border border-green-500/20">
+        <h3 className="text-xl font-display font-bold mb-4">Key Insights</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <span className="text-3xl mb-2 block">🎯</span>
-            <p className="font-semibold mb-1">Best Day for Calls</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+            <CalendarDaysIcon className="w-8 h-8 mb-2 text-white" />
+            <p className="font-display font-semibold mb-1">Best Day for Calls</p>
             <p className="text-sm text-green-100">Friday with 28 calls on average</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <span className="text-3xl mb-2 block">🕐</span>
-            <p className="font-semibold mb-1">Peak Call Time</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+            <ClockIcon className="w-8 h-8 mb-2 text-white" />
+            <p className="font-display font-semibold mb-1">Peak Call Time</p>
             <p className="text-sm text-green-100">3pm - 4pm receives most calls</p>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <span className="text-3xl mb-2 block">💡</span>
-            <p className="font-semibold mb-1">Recommendation</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/10">
+            <LightBulbIcon className="w-8 h-8 mb-2 text-white" />
+            <p className="font-display font-semibold mb-1">Recommendation</p>
             <p className="text-sm text-green-100">Staff availability during peak hours increases conversions</p>
           </div>
         </div>
       </div>
 
       {/* Top Performing Services */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Performing Services</h3>
+      <div className="bg-zinc-900 rounded-xl shadow-sm p-6 border border-zinc-800">
+        <h3 className="text-lg font-display font-semibold text-white mb-4">Top Performing Services</h3>
         <div className="space-y-4">
           {[
             { name: 'Consultation', bookings: 45, revenue: 4500 },
@@ -276,17 +284,17 @@ export default function Analytics() {
             { name: 'New Patient Intake', bookings: 28, revenue: 2800 },
             { name: 'Treatment Session', bookings: 22, revenue: 2200 },
           ].map((service, index) => (
-            <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-4 bg-zinc-900 rounded-lg border border-zinc-800 hover:bg-zinc-800/50 transition-colors">
               <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400 font-bold">
+                <div className="flex items-center justify-center w-10 h-10 bg-green-900/20 rounded-lg text-green-400 font-bold border border-green-800/30">
                   {index + 1}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{service.name}</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{service.bookings} bookings</p>
+                  <p className="font-medium text-white">{service.name}</p>
+                  <p className="text-sm text-zinc-400">{service.bookings} bookings</p>
                 </div>
               </div>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">${service.revenue}</p>
+              <p className="text-lg font-semibold text-white">${service.revenue}</p>
             </div>
           ))}
         </div>

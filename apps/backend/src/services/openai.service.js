@@ -2,337 +2,164 @@ const OpenAI = require('openai');
 const config = require('../utils/config');
 const logger = require('../utils/logger');
 
-/**
- * OpenAIService - AI conversation and intelligence
- *
- * Features:
- * - GPT-4 conversation with streaming
- * - Function calling for actions
- * - Context management
- * - Test mode with mock responses
- */
-
 class OpenAIService {
   constructor() {
     this.testMode = !config.OPENAI_API_KEY || config.OPENAI_API_KEY === 'your_openai_api_key';
 
     if (this.testMode) {
-      logger.warn('OpenAIService running in TEST MODE - using mock AI responses');
+      logger.warn('OpenAIService running in TEST MODE');
       this.client = null;
     } else {
-      this.client = new OpenAI({
-        apiKey: config.OPENAI_API_KEY,
-      });
-      logger.info('OpenAIService initialized with real OpenAI API');
+      this.client = new OpenAI({ apiKey: config.OPENAI_API_KEY });
+      logger.info('OpenAIService initialized');
     }
-
-    // Mock conversation state for testing
-    this.mockConversationCount = 0;
   }
 
-  /**
-   * Generate AI response with function calling
-   */
-  async generateResponse(messages, functions, options = {}) {
+  async generateResponse(messages, functions) {
     if (this.testMode) {
-      return this.generateMockResponse(messages, functions);
-    }
-
-    const startTime = Date.now();
-
-    try {
-      const response = await this.client.chat.completions.create({
-        model: options.model || 'gpt-4o-mini', // Fast and cheap for development
-        messages,
-        functions,
-        function_call: 'auto',
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 150, // Keep responses short
-        stream: false,
-      });
-
-      const responseTime = Date.now() - startTime;
-
-      const message = response.choices[0].message;
-      const functionCall = message.function_call;
-
-      logger.info('OpenAI response generated', {
-        responseTime,
-        hasFunction: !!functionCall,
-        functionName: functionCall?.name,
-      });
-
       return {
-        text: message.content,
-        functionCall: functionCall ? {
-          name: functionCall.name,
-          arguments: JSON.parse(functionCall.arguments),
-        } : null,
-        usage: response.usage,
-        responseTime,
-      };
-    } catch (error) {
-      logger.error('OpenAI API error', {
-        error: error.message,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Generate mock AI response for testing
-   */
-  generateMockResponse(messages, functions) {
-    this.mockConversationCount++;
-
-    const lastMessage = messages[messages.length - 1].content.toLowerCase();
-
-    // Simulate intelligent responses based on keywords
-    if (lastMessage.includes('appointment') || lastMessage.includes('schedule') || lastMessage.includes('book')) {
-      return {
-        text: "I'd be happy to help you schedule an appointment. What service do you need, and what date works best for you?",
-        functionCall: {
-          name: 'detect_intent',
-          arguments: {
-            intent: 'schedule_appointment',
-            confidence: 0.95,
-          },
-        },
-        usage: { total_tokens: 50 },
-        responseTime: 250,
-        testMode: true,
-      };
-    }
-
-    if (lastMessage.includes('hours') || lastMessage.includes('open')) {
-      return {
-        text: "We're open Monday through Friday, 8 AM to 5 PM, and Saturday 9 AM to 2 PM. We're closed on Sundays.",
+        text: 'Thank you for calling! How can I help you today?',
+        intent: 'greeting',
         functionCall: null,
-        usage: { total_tokens: 40 },
-        responseTime: 200,
-        testMode: true,
       };
     }
 
-    if (lastMessage.includes('cost') || lastMessage.includes('price') || lastMessage.includes('much')) {
-      return {
-        text: "Our standard service call is $150, which includes diagnosis and up to one hour of work. Would you like to schedule an appointment?",
-        functionCall: null,
-        usage: { total_tokens: 45 },
-        responseTime: 220,
-        testMode: true,
-      };
+    const requestConfig = {
+      model: 'gpt-4o', // Fastest GPT-4 level model
+      messages,
+      temperature: 1.0, // Higher for more natural, less predictable responses
+      max_tokens: 60, // Very short responses for natural phone conversation
+      presence_penalty: 0.6, // Strong encouragement for variety in topics
+      frequency_penalty: 0.5, // Reduce repetition of exact phrases
+      top_p: 0.95, // Slightly more focused while still creative
+    };
+
+    if (functions && functions.length > 0) {
+      requestConfig.functions = functions;
+      requestConfig.function_call = 'auto';
     }
 
-    if (lastMessage.includes('emergency') || lastMessage.includes('urgent')) {
-      return {
-        text: "I understand this is urgent. Let me get your information quickly so we can help you right away. What's your name and address?",
-        functionCall: {
-          name: 'flag_emergency',
-          arguments: {
-            description: 'Urgent service needed',
-          },
-        },
-        usage: { total_tokens: 50 },
-        responseTime: 230,
-        testMode: true,
-      };
-    }
+    const response = await this.client.chat.completions.create(requestConfig);
+    const choice = response.choices[0];
 
-    // Default greeting or general response
-    if (this.mockConversationCount === 1) {
-      return {
-        text: "Thank you for calling! How can I help you today?",
-        functionCall: null,
-        usage: { total_tokens: 30 },
-        responseTime: 180,
-        testMode: true,
-      };
-    }
-
-    return {
-      text: "I understand. Let me help you with that. Could you provide more details?",
+    const result = {
+      text: choice.message?.content || null,
+      intent: this.detectIntent(choice.message?.content),
       functionCall: null,
-      usage: { total_tokens: 35 },
-      responseTime: 190,
-      testMode: true,
     };
-  }
 
-  /**
-   * Generate streaming response (for real-time conversation)
-   */
-  async generateStreamingResponse(messages, functions, onChunk, options = {}) {
-    if (this.testMode) {
-      return this.generateMockStreamingResponse(messages, onChunk);
-    }
-
-    try {
-      const stream = await this.client.chat.completions.create({
-        model: options.model || 'gpt-4o-mini',
-        messages,
-        functions,
-        function_call: 'auto',
-        temperature: options.temperature || 0.7,
-        max_tokens: options.maxTokens || 150,
-        stream: true,
-      });
-
-      let fullText = '';
-      let functionCall = null;
-
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta;
-
-        if (delta?.content) {
-          fullText += delta.content;
-          onChunk({
-            type: 'text',
-            content: delta.content,
-          });
-        }
-
-        if (delta?.function_call) {
-          if (!functionCall) {
-            functionCall = {
-              name: delta.function_call.name || '',
-              arguments: '',
-            };
-          }
-          if (delta.function_call.arguments) {
-            functionCall.arguments += delta.function_call.arguments;
-          }
-        }
+    if (choice.message?.function_call) {
+      try {
+        result.functionCall = {
+          name: choice.message.function_call.name,
+          arguments: JSON.parse(choice.message.function_call.arguments),
+        };
+      } catch (error) {
+        logger.error('Failed to parse function call', { error: error.message });
       }
-
-      if (functionCall && functionCall.arguments) {
-        functionCall.arguments = JSON.parse(functionCall.arguments);
-        onChunk({
-          type: 'function',
-          function: functionCall,
-        });
-      }
-
-      logger.info('Streaming response completed', {
-        textLength: fullText.length,
-        hasFunction: !!functionCall,
-      });
-
-      return {
-        text: fullText,
-        functionCall,
-      };
-    } catch (error) {
-      logger.error('Streaming error', {
-        error: error.message,
-      });
-      throw error;
     }
+
+    return result;
   }
 
-  /**
-   * Generate mock streaming response
-   */
-  async generateMockStreamingResponse(messages, onChunk) {
-    const response = this.generateMockResponse(messages, []);
-    const words = response.text.split(' ');
-
-    // Simulate streaming word by word
-    for (const word of words) {
-      await new Promise((resolve) => setTimeout(resolve, 50));
-      onChunk({
-        type: 'text',
-        content: word + ' ',
-      });
-    }
-
-    if (response.functionCall) {
-      onChunk({
-        type: 'function',
-        function: response.functionCall,
-      });
-    }
-
-    return response;
+  detectIntent(text) {
+    if (!text) return 'unknown';
+    const lower = text.toLowerCase();
+    
+    if (lower.includes('appointment') || lower.includes('book')) return 'booking';
+    if (lower.includes('transfer')) return 'transfer';
+    if (lower.includes('hello') || lower.includes('hi')) return 'greeting';
+    if (lower.includes('goodbye')) return 'farewell';
+    if (lower.includes('emergency')) return 'urgent';
+    
+    return 'conversation';
   }
 
-  /**
-   * Extract entities from text (names, dates, phone numbers)
-   */
-  async extractEntities(text) {
-    if (this.testMode) {
-      // Simple regex-based extraction for test mode
-      const phoneRegex = /(\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/;
-      const emailRegex = /\S+@\S+\.\S+/;
+  buildSystemPrompt(config) {
+    const businessName = config.businessName || 'the company';
+    const agentName = config.aiAgentName || 'Sarah';
+    const hours = config.businessHoursStart && config.businessHoursEnd
+      ? `${config.businessHoursStart} to ${config.businessHoursEnd}`
+      : '8am to 6pm';
 
-      const phone = text.match(phoneRegex)?.[0];
-      const email = text.match(emailRegex)?.[0];
+    return `You are ${agentName}, receptionist at ${businessName} HVAC. You're having a real, natural phone conversation.
 
-      return {
-        phone: phone || null,
-        email: email || null,
-        testMode: true,
-      };
-    }
+CRITICAL: You sound like a REAL PERSON on the phone. Not a script. Not a bot. A human being.
 
-    try {
-      const response = await this.client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Extract structured information from user input. Return JSON with: name, phone, email, date, time, address.',
-          },
-          {
-            role: 'user',
-            content: text,
-          },
-        ],
-        temperature: 0,
-        max_tokens: 100,
-      });
+HOW YOU TALK:
+- Super natural and conversational - like you've done this job for years
+- You interrupt yourself, change direction mid-sentence, use filler words
+- "Oh yeah, no problem" "For sure" "Totally" "Yeah" "Mmm hmm"
+- Ask ONE thing at a time - don't list requirements
+- React naturally to what they say - don't just move to the next question
+- Acknowledge their answers: "Got it" "Perfect" "Okay" "Alright"
+- Sometimes you repeat back what they said to confirm
+- You care about their problem - you're not just collecting data
 
-      const extracted = JSON.parse(response.choices[0].message.content);
+EXAMPLES OF NATURAL VS ROBOTIC:
 
-      logger.info('Entities extracted', { extracted });
-      return extracted;
-    } catch (error) {
-      logger.error('Entity extraction failed', {
-        error: error.message,
-      });
-      return {};
-    }
-  }
+When they describe a problem:
+❌ "I understand you are experiencing an air conditioning issue. Let me gather some information."
+✅ "Oh man, AC's out? That's the worst. Okay, let me get you taken care of."
 
-  /**
-   * Classify urgency of a message
-   */
-  async classifyUrgency(text) {
-    const urgentKeywords = [
-      'emergency',
-      'urgent',
-      'asap',
-      'immediately',
-      'flooding',
-      'fire',
-      'smoke',
-      'gas leak',
-      'no heat',
-      'no ac',
-      'broken',
-    ];
+When collecting info:
+❌ "I need your name, phone number, and address to proceed."
+✅ "Alright, what's your name?" [they answer] "Perfect, and the best number for you?"
 
-    const lowerText = text.toLowerCase();
-    const hasUrgentKeyword = urgentKeywords.some((keyword) =>
-      lowerText.includes(keyword)
-    );
+When they say something:
+❌ "Thank you for that information. What is your address?"
+✅ "Got it. And where are you at?"
 
-    return {
-      isUrgent: hasUrgentKeyword,
-      confidence: hasUrgentKeyword ? 0.9 : 0.5,
-    };
+THE JOB:
+You're booking HVAC appointments. People call with:
+- AC not working (hot house!)
+- Heater not working (cold house!)
+- Strange noises, smells, leaks
+- Want maintenance or new system
+
+URGENCY - assess silently:
+🚨 EMERGENCY = Gas smell, carbon monoxide, flooding, no heat in freezing temps
+   → Use transfer_call function RIGHT AWAY
+⚡ URGENT = No AC when 95°+, no heat, system dead
+✅ NORMAL = Everything else
+
+WHAT YOU NEED (gather naturally, not like a form):
+- What's wrong (let them tell you)
+- Their name
+- Phone number
+- Address where the work is
+- When works for them (morning/afternoon/evening)
+
+BOOKING:
+- Use check_availability to see what's open
+- Suggest times naturally: "I've got tomorrow afternoon around 2, does that work?"
+- Use book_appointment when they agree to a time
+- If they just want to leave a message, use create_message
+
+KEEP IT SHORT:
+- 1-2 sentences max per response
+- This is a PHONE CALL - back and forth, not paragraphs
+- If you're saying more than 2 sentences, you're talking too much
+
+NATURAL REACTIONS:
+Empathy: "Oh no" "That sucks" "Ugh, I'm sorry" "That's frustrating"
+Agreement: "Yeah" "For sure" "Totally" "Absolutely"
+Acknowledgment: "Got it" "Perfect" "Okay" "Alright" "Cool"
+Transitions: "So..." "Okay..." "Alright so..." "Let me just..."
+
+PRICING (only if they ask):
+"Usually runs between [range], but the tech will give you an exact price before starting anything"
+- Repair: $150-500
+- Maintenance: $89-199
+- New system: $3500-12000
+
+HOURS: ${hours} (24/7 emergency)
+
+SERVICE AREA: Whole metro area
+BRANDS: All major brands (Carrier, Trane, Lennox, Goodman, Rheem, etc)
+
+Remember: This is a REAL conversation. You're not reading a script. You're a human being helping someone with their broken AC or heater. Talk like it.`;
   }
 }
 
-// Export singleton instance
 module.exports = new OpenAIService();

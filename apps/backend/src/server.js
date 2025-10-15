@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const expressWs = require('express-ws');
 const cors = require('cors');
@@ -115,6 +114,10 @@ app.use('/api/business', businessRoutes);
 // Call handling routes (THE CRITICAL ONE)
 const callRoutes = require('./routes/calls');
 app.use('/api/calls', callRoutes);
+
+// Twilio webhook routes (NO AUTH - called by Twilio)
+const twilioRoutes = require('./routes/twilio');
+app.use('/api/twilio', twilioRoutes);
 
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
