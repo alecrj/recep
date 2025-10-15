@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 import api from '../lib/api';
-import Layout from '../components/Layout';
 
 export default function Customers() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
   const { data, isLoading } = useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
@@ -11,51 +14,330 @@ export default function Customers() {
     },
   });
 
-  return (
-    <Layout>
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Customers</h2>
-          <p className="text-gray-600 mt-1">Manage your customer relationships</p>
-        </div>
+  const { data: customerDetails } = useQuery({
+    queryKey: ['customer', selectedCustomer],
+    queryFn: async () => {
+      const response = await api.get(`/business/customers/${selectedCustomer}`);
+      return response.data;
+    },
+    enabled: !!selectedCustomer,
+  });
 
-        <div className="card">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-            </div>
-          ) : data?.customers?.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Calls</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Contact</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {data.customers.map((customer) => (
-                    <tr key={customer.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{customer.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{customer.phone}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{customer.email || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{customer._count?.calls || 0}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {customer.lastContactedAt ? new Date(customer.lastContactedAt).toLocaleDateString() : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">No customers yet</p>
+  const filteredCustomers = data?.customers?.filter((customer) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      customer.name?.toLowerCase().includes(query) ||
+      customer.phone?.toLowerCase().includes(query) ||
+      customer.email?.toLowerCase().includes(query)
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h2>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your customer relationships</p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search customers by name, phone, or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-3 pl-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+            🔍
+          </span>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              ×
+            </button>
           )}
         </div>
       </div>
-    </Layout>
+
+      {/* Customers Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+          </div>
+        ) : filteredCustomers?.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-900">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Total Calls
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Appointments
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Last Contact
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredCustomers.map((customer) => (
+                  <tr
+                    key={customer.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold">
+                          {customer.name?.charAt(0)?.toUpperCase() || '?'}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {customer.name || 'Unknown'}
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            ID: {customer.id.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {customer.phone || 'N/A'}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {customer.email || 'No email'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl text-gray-900 dark:text-white font-semibold">
+                          {customer._count?.calls || 0}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">calls</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl text-gray-900 dark:text-white font-semibold">
+                          {customer._count?.appointments || 0}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">appts</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {customer.lastContactedAt
+                        ? new Date(customer.lastContactedAt).toLocaleDateString()
+                        : 'Never'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={() => setSelectedCustomer(customer.id)}
+                        className="text-green-600 hover:text-green-700 dark:text-green-400 font-medium"
+                      >
+                        View Profile
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">
+              {searchQuery ? 'No customers found matching your search' : 'No customers yet'}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Customer Details Modal */}
+      {selectedCustomer && customerDetails && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setSelectedCustomer(null)}
+          />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[85vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-600 to-emerald-600">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white font-bold text-2xl">
+                      {customerDetails.customer.name?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white">
+                        {customerDetails.customer.name || 'Unknown Customer'}
+                      </h3>
+                      <p className="text-green-100 mt-1">
+                        Customer since {new Date(customerDetails.customer.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    className="text-white/80 hover:text-white"
+                  >
+                    <span className="text-3xl">×</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  {/* Stats Cards */}
+                  <div className="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
+                    <p className="text-sm text-cyan-600 dark:text-cyan-400 mb-1">Total Calls</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {customerDetails.customer._count?.calls || 0}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                    <p className="text-sm text-green-600 dark:text-green-400 mb-1">Appointments</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {customerDetails.customer._count?.appointments || 0}
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                    <p className="text-sm text-purple-600 dark:text-purple-400 mb-1">Last Contact</p>
+                    <p className="text-lg font-bold text-gray-900 dark:text-white">
+                      {customerDetails.customer.lastContactedAt
+                        ? new Date(customerDetails.customer.lastContactedAt).toLocaleDateString()
+                        : 'Never'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Contact Information</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">📞</span>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {customerDetails.customer.phone || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">✉️</span>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
+                        <p className="text-gray-900 dark:text-white font-medium">
+                          {customerDetails.customer.email || 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recent Calls */}
+                {customerDetails.recentCalls && customerDetails.recentCalls.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Recent Calls</h4>
+                    <div className="space-y-3">
+                      {customerDetails.recentCalls.map((call) => (
+                        <div
+                          key={call.id}
+                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {new Date(call.startedAt).toLocaleString()}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                call.outcome === 'APPOINTMENT_BOOKED'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : call.outcome === 'MESSAGE_TAKEN'
+                                  ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400'
+                                  : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              }`}
+                            >
+                              {call.outcome?.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-900 dark:text-white">
+                            Duration: {call.durationSeconds ? `${Math.floor(call.durationSeconds / 60)}:${(call.durationSeconds % 60).toString().padStart(2, '0')}` : 'N/A'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upcoming Appointments */}
+                {customerDetails.upcomingAppointments && customerDetails.upcomingAppointments.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Upcoming Appointments</h4>
+                    <div className="space-y-3">
+                      {customerDetails.upcomingAppointments.map((appointment) => (
+                        <div
+                          key={appointment.id}
+                          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {appointment.serviceType || 'Appointment'}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                appointment.status === 'CONFIRMED'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                  : 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+                              }`}
+                            >
+                              {appointment.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <span>📅 {new Date(appointment.scheduledTime).toLocaleDateString()}</span>
+                            <span>🕐 {new Date(appointment.scheduledTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            {appointment.price && <span>💰 ${appointment.price}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
+                <button
+                  onClick={() => setSelectedCustomer(null)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+                <button className="flex-1 btn-primary">
+                  Edit Customer
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

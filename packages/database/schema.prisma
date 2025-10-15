@@ -71,12 +71,15 @@ model BusinessConfig {
   aiTone           String  @default("professional") @map("ai_tone")
   greetingMessage  String? @map("greeting_message")
 
+  // Industry Configuration
+  industry         String? @default("general") // HVAC, Plumbing, Electrical, etc.
+
   // Business Info (JSON fields)
   businessHours       Json?   @map("business_hours") // {"monday": {"open": "09:00", "close": "17:00"}}
   businessHoursStart  String? @default("09:00") @map("business_hours_start") // Simple start time for availability
   businessHoursEnd    String? @default("17:00") @map("business_hours_end")   // Simple end time for availability
   appointmentDuration Int?    @default(60) @map("appointment_duration")      // Default appointment length in minutes
-  services            Json?   // [{"name": "AC Repair", "price": "$150+", "duration": 60}]
+  services            Json?   // [{"name": "AC Repair", "priceMin": 150, "priceMax": 350, "duration": 60}]
   faqs                Json?   // [{"question": "...", "answer": "..."}]
 
   // Integration Tokens
@@ -116,6 +119,12 @@ model Customer {
   email   String?
   address String?
   notes   String?
+
+  // Service History
+  lastServiceType   String?   @map("last_service_type")
+  lastServiceDate   DateTime? @map("last_service_date")
+  equipmentInfo     Json?     @map("equipment_info") // {"ac": "Carrier 2020", "furnace": "Trane 2018"}
+  preferredTech     String?   @map("preferred_tech")
 
   // Metadata
   createdAt         DateTime  @default(now()) @map("created_at")

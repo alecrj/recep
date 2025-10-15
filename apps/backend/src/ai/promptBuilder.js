@@ -44,16 +44,25 @@ YOUR ROLE:
       prompt += '\n';
     }
 
-    // Add services
+    // Add services with price ranges
     if (config.services && config.services.length > 0) {
       prompt += `SERVICES WE OFFER:\n`;
       config.services.forEach((service) => {
         prompt += `- ${service.name}`;
-        if (service.price) prompt += ` (${service.price})`;
+        if (service.priceMin && service.priceMax) {
+          prompt += ` ($${service.priceMin}-$${service.priceMax})`;
+        } else if (service.price) {
+          prompt += ` (${service.price})`;
+        }
         if (service.duration) prompt += ` - ${service.duration} minutes`;
+        if (service.emergency) prompt += ` [EMERGENCY SERVICE]`;
         prompt += '\n';
       });
       prompt += '\n';
+      prompt += `PRICING GUIDANCE:\n`;
+      prompt += `- Quote price RANGES only, not exact prices\n`;
+      prompt += `- Say "typically runs $X-$Y depending on the issue"\n`;
+      prompt += `- Never guarantee an exact price without inspection\n\n`;
     }
 
     // Add FAQs
@@ -84,6 +93,12 @@ YOUR ROLE:
 - If booking appointment: get name, phone, desired date/time, service type
 - If unclear, ask for clarification
 - Stay in character as a helpful receptionist
+
+PAYMENT COLLECTION:
+- If customer asks about paying deposit or full amount, use collect_payment
+- After booking appointment, you can offer to collect deposit if they prefer
+- Always confirm amount before sending payment link
+- Payment links are sent via SMS automatically
 
 IMPORTANT:
 - Natural speech patterns only
@@ -301,6 +316,21 @@ IMPORTANT:
             reason: { type: 'string' },
           },
           required: ['reason'],
+        },
+      },
+      {
+        name: 'collect_payment',
+        description: 'Send a payment link to customer via SMS for immediate payment',
+        parameters: {
+          type: 'object',
+          properties: {
+            customerName: { type: 'string', description: 'Customer full name' },
+            customerPhone: { type: 'string', description: 'Customer phone number' },
+            amount: { type: 'number', description: 'Payment amount in dollars' },
+            description: { type: 'string', description: 'Service description for payment' },
+            appointmentId: { type: 'string', description: 'Optional appointment ID if related to appointment' },
+          },
+          required: ['customerName', 'customerPhone', 'amount', 'description'],
         },
       },
     ];

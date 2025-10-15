@@ -301,6 +301,23 @@ Reply via your dashboard.`;
 
     return this.sendSMS(ownerPhone, message);
   }
+
+  /**
+   * Send payment link to customer
+   */
+  async sendPaymentLink(phone, paymentDetails) {
+    const message = `💳 Payment Request - ${paymentDetails.businessName}
+
+Amount: $${paymentDetails.amount}
+Service: ${paymentDetails.service}
+
+Secure payment link:
+${paymentDetails.paymentUrl}
+
+This link expires in 24 hours.`;
+
+    return this.sendSMS(phone, message);
+  }
 }
 
 // Export singleton instance

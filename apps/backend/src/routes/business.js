@@ -4,6 +4,7 @@ const logger = require('../utils/logger');
 const authMiddleware = require('../middleware/auth.middleware');
 const calendarService = require('../services/calendar.service');
 const twilioService = require('../services/twilio.service');
+const { getAvailableIndustries, applyIndustryTemplate } = require('../config/industry-templates');
 
 const router = express.Router();
 
@@ -293,6 +294,85 @@ router.put('/config', async (req, res) => {
       businessId: req.user.id,
     });
     res.status(500).json({ error: 'Failed to update configuration' });
+  }
+});
+
+/**
+ * Get Available Industry Templates
+ */
+router.get('/industries', async (req, res) => {
+  try {
+    const industries = getAvailableIndustries();
+
+    res.json({
+      success: true,
+      industries,
+    });
+  } catch (error) {
+    logger.error('Get industries error', {
+      error: error.message,
+    });
+    res.status(500).json({ error: 'Failed to load industries' });
+  }
+});
+
+/**
+ * Apply Industry Template to Business Config
+ */
+router.post('/config/apply-template', async (req, res) => {
+  try {
+    const { industry } = req.body;
+
+    if (!industry) {
+      return res.status(400).json({ error: 'Industry is required' });
+    }
+
+    // Get business info
+    const business = await prisma.business.findUnique({
+      where: { id: req.user.id },
+      select: { name: true },
+    });
+
+    // Apply industry template
+    const templateConfig = applyIndustryTemplate(industry, business.name);
+
+    // Update business config with template
+    const config = await prisma.businessConfig.update({
+      where: { businessId: req.user.id },
+      data: {
+        industry: templateConfig.industry,
+        greetingMessage: templateConfig.greetingMessage,
+        services: templateConfig.services,
+        emergencyKeywords: templateConfig.emergencyKeywords,
+        faqs: templateConfig.faqs,
+        businessHoursStart: templateConfig.businessHoursStart,
+        businessHoursEnd: templateConfig.businessHoursEnd,
+        appointmentDuration: templateConfig.appointmentDuration,
+      },
+    });
+
+    // Also update industry on business record
+    await prisma.business.update({
+      where: { id: req.user.id },
+      data: { industry: templateConfig.industry },
+    });
+
+    logger.info('Industry template applied', {
+      businessId: req.user.id,
+      industry: templateConfig.industry,
+    });
+
+    res.json({
+      success: true,
+      config,
+      message: `${industry.toUpperCase()} template applied successfully`,
+    });
+  } catch (error) {
+    logger.error('Apply template error', {
+      error: error.message,
+      businessId: req.user.id,
+    });
+    res.status(500).json({ error: 'Failed to apply template' });
   }
 });
 
@@ -861,13 +941,79 @@ router.get('/analytics', async (req, res) => {
       _count: true,
     });
 
+    // Calculate ROI metrics
+    const appointmentsBooked = callsByOutcome.find(c => c.outcome === 'APPOINTMENT_BOOKED')?._count || 0;
+    const conversionRate = totalCalls > 0 ? (appointmentsBooked / totalCalls * 100).toFixed(1) : 0;
+
+    // Get business config to calculate estimated revenue
+    const config = await prisma.businessConfig.findUnique({
+      where: { businessId: req.user.id },
+    });
+
+    let estimatedRevenue = 0;
+    let avgServicePrice = 0;
+
+    if (config && config.services) {
+      const services = JSON.parse(JSON.stringify(config.services));
+      // Calculate average price across all services
+      const pricesSum = services.reduce((sum, s) => sum + ((s.priceMin + s.priceMax) / 2), 0);
+      avgServicePrice = services.length > 0 ? Math.round(pricesSum / services.length) : 250;
+      estimatedRevenue = appointmentsBooked * avgServicePrice;
+    } else {
+      // Default estimate if no services configured
+      avgServicePrice = 250;
+      estimatedRevenue = appointmentsBooked * 250;
+    }
+
+    // Message/emergency stats
+    const messagesCount = callsByOutcome.find(c => c.outcome === 'MESSAGE_TAKEN')?._count || 0;
+    const emergenciesCount = callsByOutcome.find(c => c.outcome === 'EMERGENCY_FLAGGED')?._count || 0;
+
+    // Calculate calls by hour for peak times
+    const callsByHour = {};
+    const callsWithTime = await prisma.call.findMany({
+      where,
+      select: { startedAt: true },
+    });
+
+    callsWithTime.forEach(call => {
+      const hour = new Date(call.startedAt).getHours();
+      callsByHour[hour] = (callsByHour[hour] || 0) + 1;
+    });
+
+    const peakHour = Object.entries(callsByHour).sort((a, b) => b[1] - a[1])[0];
+
     res.json({
       success: true,
       analytics: {
+        // Call stats
         totalCalls,
         callsByOutcome,
         callsByDay,
+        callsByHour,
+        peakHour: peakHour ? `${peakHour[0]}:00` : 'N/A',
+
+        // Appointment stats
+        appointmentsBooked,
         appointmentStats,
+
+        // Messages & emergencies
+        messagesCount,
+        emergenciesCount,
+
+        // ROI metrics
+        conversionRate: `${conversionRate}%`,
+        avgServicePrice,
+        estimatedRevenue,
+        roi: {
+          appointmentsBooked,
+          estimatedRevenue,
+          aiCost: 1500, // Monthly cost
+          receptionistCost: 3500, // Average receptionist cost
+          netSavings: 2000, // 3500 - 1500
+        },
+
+        // Date range
         dateRange: { start, end },
       },
     });

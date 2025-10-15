@@ -2,6 +2,8 @@ const logger = require('../utils/logger');
 const { prisma } = require('@ai-receptionist/database');
 const twilioService = require('../services/twilio.service');
 const calendarService = require('../services/calendar.service');
+const emailService = require('../services/email.service');
+const stripeService = require('../services/stripe.service');
 
 /**
  * ActionExecutor - Executes actions based on AI decisions
@@ -24,6 +26,7 @@ class ActionExecutor {
       take_message: this.takeMessage.bind(this),
       flag_emergency: this.flagEmergency.bind(this),
       transfer_call: this.transferCall.bind(this),
+      collect_payment: this.collectPayment.bind(this),
     };
   }
 
@@ -255,7 +258,7 @@ class ActionExecutor {
       // Send confirmation SMS
       const business = await prisma.business.findUnique({
         where: { id: context.businessId },
-        select: { name: true },
+        select: { name: true, ownerEmail: true },
       });
 
       await twilioService.sendAppointmentConfirmation(customerPhone, {
@@ -267,6 +270,19 @@ class ActionExecutor {
         service: serviceType,
         businessName: business.name,
       });
+
+      // Send email notification to business owner
+      if (business.ownerEmail) {
+        await emailService.sendAppointmentBooked(business.ownerEmail, {
+          customerName,
+          customerPhone,
+          customerEmail: customer.email,
+          serviceType,
+          scheduledTime,
+          duration: 60,
+          notes: notes || '',
+        });
+      }
 
       context.conversation.setState('confirming_booking');
 
@@ -323,10 +339,10 @@ class ActionExecutor {
         },
       });
 
-      // Alert business owner
+      // Alert business owner via SMS and Email
       const business = await prisma.business.findUnique({
         where: { id: context.businessId },
-        select: { ownerPhone: true },
+        select: { ownerPhone: true, ownerEmail: true },
       });
 
       if (business.ownerPhone) {
@@ -335,6 +351,16 @@ class ActionExecutor {
           phone,
           message,
           urgent: urgent || false,
+        });
+      }
+
+      // Send email if message is urgent
+      if (business.ownerEmail && urgent) {
+        await emailService.sendUrgentMessageAlert(business.ownerEmail, {
+          customerName: name,
+          customerPhone: phone,
+          content: message,
+          createdAt: new Date(),
         });
       }
 
@@ -393,16 +419,26 @@ class ActionExecutor {
         },
       });
 
-      // Send URGENT alert to owner
+      // Send URGENT alert to owner via SMS and Email
       const business = await prisma.business.findUnique({
         where: { id: context.businessId },
-        select: { ownerPhone: true },
+        select: { ownerPhone: true, ownerEmail: true },
       });
 
       if (business.ownerPhone) {
         await twilioService.sendEmergencyAlert(business.ownerPhone, {
           name: name || 'Unknown',
           phone: phone || context.callerPhone,
+          description,
+          address,
+        });
+      }
+
+      // Send emergency email alert
+      if (business.ownerEmail) {
+        await emailService.sendEmergencyAlert(business.ownerEmail, {
+          customerName: name || 'Unknown',
+          customerPhone: phone || context.callerPhone,
           description,
           address,
         });
@@ -493,6 +529,96 @@ class ActionExecutor {
         success: false,
         error: error.message,
         message: 'Failed to transfer call',
+      };
+    }
+  }
+
+  /**
+   * Collect payment from customer
+   */
+  async collectPayment(args, context) {
+    const { customerName, customerPhone, amount, description, appointmentId } = args;
+
+    try {
+      // Find or create customer
+      let customer = await prisma.customer.findFirst({
+        where: {
+          businessId: context.businessId,
+          phone: customerPhone,
+        },
+      });
+
+      if (!customer) {
+        customer = await prisma.customer.create({
+          data: {
+            businessId: context.businessId,
+            name: customerName,
+            phone: customerPhone,
+          },
+        });
+      }
+
+      // Get business info
+      const business = await prisma.business.findUnique({
+        where: { id: context.businessId },
+        select: { name: true, config: true },
+      });
+
+      // Create payment link via Stripe
+      const paymentResult = await stripeService.createPaymentLink(
+        context.businessId,
+        {
+          amount,
+          description,
+          customerName,
+          customerEmail: customer.email,
+          customerPhone,
+        }
+      );
+
+      // Create payment record
+      const payment = await prisma.payment.create({
+        data: {
+          businessId: context.businessId,
+          customerId: customer.id,
+          appointmentId: appointmentId || null,
+          amount,
+          status: 'PENDING',
+          stripePaymentId: paymentResult.paymentId,
+          stripePaymentUrl: paymentResult.paymentUrl,
+        },
+      });
+
+      // Send payment link via SMS
+      await twilioService.sendPaymentLink(customerPhone, {
+        businessName: business.name,
+        amount: `$${amount}`,
+        service: description,
+        paymentUrl: paymentResult.paymentUrl,
+      });
+
+      logger.info('Payment link sent', {
+        paymentId: payment.id,
+        customerId: customer.id,
+        amount,
+      });
+
+      return {
+        success: true,
+        paymentId: payment.id,
+        paymentUrl: paymentResult.paymentUrl,
+        message: `Payment link sent to ${customerPhone}`,
+      };
+    } catch (error) {
+      logger.error('Failed to collect payment', {
+        error: error.message,
+        args,
+      });
+
+      return {
+        success: false,
+        error: error.message,
+        message: 'Failed to send payment link',
       };
     }
   }
