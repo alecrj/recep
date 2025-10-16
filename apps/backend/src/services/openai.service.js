@@ -28,7 +28,7 @@ class OpenAIService {
       model: 'gpt-4o', // Fastest GPT-4 level model
       messages,
       temperature: 0.9, // Natural but not too random
-      max_tokens: 150, // Allow for natural, complete thoughts (1-2 sentences)
+      max_tokens: 80, // Shorter for faster responses (1-2 sentences)
       presence_penalty: 0.6, // Strong encouragement for variety in topics
       frequency_penalty: 0.8, // Higher to prevent repetitive phrases
       top_p: 0.9, // Focused on high-probability natural responses
@@ -60,6 +60,40 @@ class OpenAIService {
     }
 
     return result;
+  }
+
+  /**
+   * Generate streaming response for lower latency
+   * Returns an async iterator that yields tokens as they arrive
+   */
+  async generateResponseStream(messages, functions) {
+    if (this.testMode) {
+      // Mock streaming response
+      return {
+        text: 'Thank you for calling! How can I help you today?',
+        intent: 'greeting',
+        functionCall: null,
+      };
+    }
+
+    const requestConfig = {
+      model: 'gpt-4o',
+      messages,
+      temperature: 0.9,
+      max_tokens: 80,
+      presence_penalty: 0.6,
+      frequency_penalty: 0.8,
+      top_p: 0.9,
+      stream: true, // Enable streaming for lower latency
+    };
+
+    if (functions && functions.length > 0) {
+      requestConfig.functions = functions;
+      requestConfig.function_call = 'auto';
+    }
+
+    const stream = await this.client.chat.completions.create(requestConfig);
+    return stream; // Return async iterator
   }
 
   detectIntent(text) {

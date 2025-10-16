@@ -82,19 +82,19 @@ class ElevenLabsService {
         text,
         model_id: 'eleven_turbo_v2_5',  // Fastest model with high quality
         voice_settings: {
-          stability: 0.71,           // Higher = more consistent, clear, professional
-          similarity_boost: 0.80,    // High = maintains voice clarity
-          style: 0.0,                // Lower = less emotional, more professional/clear
+          stability: 0.55,           // Balanced = clear but natural variation
+          similarity_boost: 0.75,    // Maintain voice character
+          style: 0.30,               // Some expressiveness (not robotic)
           use_speaker_boost: true,   // Enhances clarity for phone calls
         },
         optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)
-        output_format: 'mp3_44100_128', // Higher quality audio output
+        output_format: 'ulaw_8000', // Direct Twilio format - NO CONVERSION NEEDED!
       },
       {
         headers: {
           'xi-api-key': config.ELEVENLABS_API_KEY,
           'Content-Type': 'application/json',
-          'Accept': 'audio/mpeg',
+          'Accept': 'audio/basic', // μ-law audio type
         },
         responseType: 'stream', // Get stream instead of buffer
       }
