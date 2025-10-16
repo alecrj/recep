@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Complete AI Receptionist System - Multi-tenant SaaS",
+  "packageManager": "npm@9.8.1",
   "workspaces": [
     "apps/*",
     "packages/*"
