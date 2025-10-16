@@ -148,34 +148,340 @@ FEATURES:
 
 ---
 
-## 🎭 CUSTOMER JOURNEY
+## 🎭 THE COMPLETE CUSTOMER JOURNEY
 
-### For YOU (Platform Owner):
-1. New HVAC company contacts you
-2. Run: `node scripts/setup-business.js`
-3. Enter their details (name, address, hours, etc)
-4. System provisions Twilio number
-5. Configure webhooks automatically
-6. Send customer login to their dashboard
-7. Customer starts taking calls IMMEDIATELY
+### **THE GOAL: 5 Minutes from Ad Click to Live AI Receptionist**
 
-### For YOUR CUSTOMER (HVAC Company):
-1. Gets welcome email with phone number
-2. Forwards their main line to AI number OR
-3. Updates Google Business with new number
-4. AI starts answering calls
-5. Appointments auto-created in their dashboard
-6. They review calls, manage schedule
-7. Monthly billing automatic
+---
 
-### For THEIR CUSTOMER (Homeowner):
-1. Calls HVAC company
-2. AI answers: "Thanks for calling [Company]! How can I help?"
-3. Natural conversation about their AC/heating issue
-4. AI books appointment
-5. Receives confirmation text
-6. Tech shows up on time
-7. Job done ✅
+### 1️⃣ CUSTOMER SEES AD & SIGNS UP (30 seconds)
+
+**Ad**: "Never miss another call. AI receptionist for your HVAC business. 14-day free trial."
+
+**Landing Page**:
+- Video demo of AI taking a call
+- "Start 14-Day Free Trial" button
+
+**Sign Up Form**:
+- Business name
+- Your name
+- Email
+- Password
+- Phone number
+- Click "Create Account"
+
+**Result**: Account created, logged into dashboard
+
+---
+
+### 2️⃣ 5-STEP SETUP WIZARD (3 minutes)
+
+#### **Screen 1: Business Basics**
+- Business address (auto-complete)
+- Service area (cities/zip codes)
+- Business hours (quick presets: M-F 8-5, M-F 7-7, 24/7)
+- Years in business
+- License number (optional)
+
+#### **Screen 2: Services & Pricing Ranges**
+Pre-filled HVAC services (editable):
+- AC Repair: $150-300
+- Heater Repair: $150-300
+- AC Installation: $3,000-8,000
+- Maintenance: $100-150
+- Emergency Service: $200-400
+
+**CRITICAL**: AI always gives RANGES, never exact prices
+
+#### **Screen 3: AI Personality**
+- AI Name: "Sarah" (dropdown with options)
+- Voice: Play 5 voice samples, select one
+- Tone: Professional / Friendly / Casual
+- Custom greeting (optional):
+  - Default: "Thank you for calling [Business Name], this is [AI Name]. How can I help you today?"
+
+#### **Screen 4: Emergency Contacts & After-Hours**
+- On-call tech name
+- On-call tech phone
+- After-hours handling:
+  - Take message (AI says "We're closed, I can take a message")
+  - Offer emergency service (routes to on-call tech)
+- Emergency triggers (checkboxes):
+  - No heat (winter)
+  - Gas smell
+  - Electrical issues
+  - Water flooding
+  - No AC (extreme heat)
+
+#### **Screen 5: Your AI Phone Number**
+
+**System assigns**: +1-877-XXX-XXXX
+
+**Two Options Presented**:
+
+**OPTION A: Forward Your Existing Number** ⭐ RECOMMENDED
+```
+Your customers keep calling: (480) 555-1234
+But it forwards to AI: +1-877-XXX-XXXX
+
+Setup Instructions (based on detected carrier):
+- Verizon: Dial *72 + 18773578556
+- AT&T: Dial *21* + 18773578556 + #
+- T-Mobile: Settings > Call Forwarding
+[Copy forwarding number button]
+
+Test it: Call your main number and hear your AI!
+```
+
+**OPTION B: Use New Number**
+```
+Give customers new AI number: +1-877-XXX-XXXX
+Update:
+- Google Business listing
+- Website
+- Business cards
+- Ads
+```
+
+**Click "Test My AI Now"** → Calls them so they hear it
+**Click "Go Live"** → AI starts answering
+
+---
+
+### 3️⃣ THEIR DASHBOARD (What HVAC Business Owner Sees)
+
+**Two Dashboards**:
+1. **YOUR Admin Dashboard**: See all customers, all businesses, all revenue
+2. **THEIR Business Dashboard**: Each HVAC company sees only their data
+
+#### **HVAC Business Owner Dashboard Tabs**:
+
+**📅 Today** (Home screen)
+- Today's appointments at a glance
+- Upcoming calls/messages
+- Quick stats: Calls today, Appointments booked, Revenue
+
+**📞 Calls** (Call History)
+- List of all calls with:
+  - Date/time
+  - Customer name
+  - Duration
+  - Intent (Booking, Question, Emergency, Other)
+  - Outcome (Booked, Message taken, Transferred)
+- Click any call → Full transcript
+- Play recording (if enabled)
+- Add notes
+
+**👥 Customers** (Auto-Populated CRM)
+```
+Customer Record (created automatically by AI):
+- Name: "John Smith"
+- Phone: "+1-555-1234"
+- Email: "john@email.com" (if collected)
+- Address: "123 Main St, Phoenix, AZ"
+- First call: "2025-10-16"
+- Total calls: 5
+- Total appointments: 3
+- Last service: "AC Repair - Oct 15"
+- Notes: "Prefers afternoon appointments"
+- Tags: "Regular Customer", "AC Repair"
+```
+
+**📆 Calendar** (Synced with Google)
+- Week/month view
+- All appointments booked by AI
+- Color-coded by service type
+- Click appointment → Customer details
+- Manually add/edit/cancel appointments
+
+**⚙️ Settings** (Editable Anytime)
+- Business info (address, hours, service area)
+- Services & pricing ranges (add/edit/remove)
+- AI personality (name, voice, tone, greeting)
+- Emergency contacts
+- FAQs (AI uses these to answer common questions)
+- Integrations (Google Calendar, Stripe, etc.)
+- Team members (invite techs to view schedule)
+
+**💳 Billing**
+- Current plan: Professional ($799/month)
+- Usage: 1,247 / 2,000 minutes
+- Next billing date
+- Upgrade/downgrade
+- Payment method
+
+**📊 Analytics**
+- "Answered 47 calls this week (would have missed 18)"
+- "Booked 12 appointments = $2,340 in revenue"
+- Busiest times graph
+- Common questions report
+- Booking rate over time
+
+---
+
+### 4️⃣ HOW THE AI AUTO-FILLS THE CRM
+
+**When call comes in**:
+
+1. **Customer calls** → AI answers
+2. **AI asks**: "What's your name?"
+   - Creates Customer record: `name: "John Smith"`
+3. **AI asks**: "What's your phone number?"
+   - Adds to record: `phone: "+1-555-1234"`
+4. **AI asks**: "What's your address?"
+   - Adds to record: `address: "123 Main St, Phoenix, AZ"`
+5. **AI conversation** → Determines issue
+   - Adds: `issue: "AC not cooling"`
+6. **AI checks availability** → Books appointment
+   - Creates Appointment record:
+     ```
+     scheduledAt: "2025-10-17 14:00"
+     service: "AC Repair"
+     duration: 60 mins
+     estimatedCost: "$150-300"
+     notes: "AC stopped cooling, unit is 8 years old"
+     ```
+7. **AI sends SMS confirmation** to customer
+8. **AI adds to Google Calendar**
+9. **Dashboard updates in real-time** → Owner sees new appointment
+
+**If returning customer**:
+- AI recognizes phone number: "Hi John! Good to hear from you again."
+- Links to existing Customer record
+- Updates: `totalCalls: 2`, `lastCallDate: "2025-10-17"`
+
+---
+
+### 5️⃣ FOR THE HOMEOWNER (End Customer Experience)
+
+1. **AC breaks** at 10pm on Saturday
+2. **Calls HVAC company** (their usual number)
+3. **AI answers immediately**: "Thanks for calling Bob's HVAC Service! This is Sarah. How can I help you?"
+4. **Natural conversation**:
+   - "My AC stopped working and it's 85 degrees in here"
+   - "Oh no, that's the worst! Let me get you taken care of. What's your name?"
+   - "John Smith"
+   - "And the best number to reach you?"
+   - "555-1234"
+   - "What's your address?"
+   - "123 Main Street"
+   - "We can get someone out first thing tomorrow morning at 8am, or if this is an emergency, I can connect you with our on-call technician right now for emergency service. What works better for you?"
+   - "Tomorrow morning is fine"
+   - "Perfect! You're all set for AC repair tomorrow at 8am. You'll get a confirmation text in just a moment. Is there anything else I can help you with?"
+   - "No, that's it"
+   - "Great! We'll see you tomorrow. Thanks for calling Bob's HVAC!"
+
+5. **Gets SMS**: "Appointment confirmed for tomorrow 10/17 at 8:00am with Bob's HVAC Service. Reply YES to confirm or CANCEL to reschedule."
+6. **Tech shows up** at 8am
+7. **Job done**, customer happy
+8. **Homeowner has NO IDEA it was AI** - sounded completely human
+
+---
+
+### 6️⃣ YOUR ADMIN DASHBOARD (What YOU See)
+
+**One Master Dashboard for All Your Customers**:
+
+**Customers Tab**:
+- List of all HVAC businesses you're serving:
+  ```
+  Bob's HVAC Service
+  Plan: Professional ($799/mo)
+  Status: Active
+  Calls this month: 247
+  Revenue: $3,750 (your profit: $2,160)
+
+  [View Dashboard] [View Calls] [Edit Settings]
+  ```
+
+**Click "View Dashboard"** → See THEIR full dashboard (calls, CRM, appointments)
+
+**System Stats**:
+- Total customers: 15
+- Total MRR: $11,985
+- Total calls today: 142
+- Total appointments booked: 47
+- System uptime: 99.8%
+
+---
+
+## 🔑 CRITICAL FEATURES THAT MAKE THIS WORK
+
+### **1. Call Forwarding Made Simple**
+- Show carrier-specific instructions automatically
+- "Copy number" button
+- Video tutorial for each carrier
+- **Future**: Twilio number porting (port their existing number in 2-3 days)
+
+### **2. Google Calendar Auto-Sync**
+- "Connect Google Calendar" button in setup
+- OAuth flow (30 seconds)
+- AI adds appointments automatically
+- Two-way sync (if they block time, AI knows)
+
+### **3. SMS Confirmations & Reminders**
+Auto-enabled:
+- Confirmation immediately after booking
+- Reminder 1 day before
+- "Tech is on the way!" notification (manual trigger)
+
+### **4. FAQs (Pre-filled, Editable)**
+Dashboard has FAQ section:
+- "What are your hours?" → AI knows from settings
+- "Do you service my area?" → AI knows from service area
+- "How much does AC repair cost?" → AI gives pricing range
+- Custom FAQs: "Do you finance?" "What brands?" "Licensed/insured?"
+
+### **5. Emergency Detection & Routing**
+AI trained to detect:
+- "No heat" (winter) + "baby in house" → EMERGENCY
+- "Gas smell" → EMERGENCY (immediate transfer)
+- "Sparking electrical" → EMERGENCY
+- "Water flooding" → EMERGENCY
+
+AI says: "This sounds like an emergency. Let me connect you with our on-call technician right now." → Transfers immediately
+
+### **6. After-Hours Handling**
+AI knows business hours from settings:
+- During hours: Normal booking
+- After hours:
+  - Option A: "We're closed but I can take a message and someone will call you first thing tomorrow morning"
+  - Option B: "Would you like emergency service? I can connect you with our on-call technician for $200-400"
+
+### **7. Analytics That Show Value**
+Customer dashboard shows:
+- "You would have missed 18 calls this week without AI"
+- "AI booked $2,340 in revenue this week"
+- "Busiest time: Tuesday 9-11am (add more techs?)"
+- "Most common issue: AC not cooling (75% of calls)"
+
+---
+
+## 🎯 THE PERFECTED VISION
+
+**For Customer (HVAC Business)**:
+- See ad → Click → 5 minutes → AI answering their calls
+- Zero technical knowledge required
+- Can edit everything through dashboard
+- CRM fills automatically
+- Calendar syncs automatically
+- Gets analytics showing ROI
+
+**For You (Platform Owner)**:
+- Customer signs up (self-serve or you help)
+- System provisions Twilio number automatically
+- System configures webhooks automatically
+- You see all customers in one admin dashboard
+- You can view any customer's data
+- Track revenue, usage, profitability
+
+**For Homeowners**:
+- Call HVAC company
+- AI answers (sounds human)
+- Appointment booked in 2 minutes
+- Gets SMS confirmation
+- Tech shows up
+- Never knew it was AI
 
 ---
 

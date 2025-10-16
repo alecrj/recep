@@ -132,6 +132,62 @@ app.get('/api/test', (req, res) => {
   });
 });
 
+// Diagnostic endpoint for ElevenLabs API key debugging
+app.get('/api/diagnostic/elevenlabs', async (req, res) => {
+  const axios = require('axios');
+
+  try {
+    const apiKey = config.ELEVENLABS_API_KEY;
+
+    // Check if key exists
+    if (!apiKey || apiKey === 'your_elevenlabs_api_key') {
+      return res.json({
+        status: 'error',
+        message: 'ElevenLabs API key not configured',
+        hasKey: false,
+      });
+    }
+
+    // Show key info (masked)
+    const keyPreview = `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}`;
+    const keyLength = apiKey.length;
+
+    // Try to fetch voices (simple API test)
+    let apiTest = null;
+    try {
+      const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
+        headers: { 'xi-api-key': apiKey },
+        timeout: 5000,
+      });
+      apiTest = {
+        success: true,
+        voiceCount: response.data.voices?.length || 0,
+      };
+    } catch (apiError) {
+      apiTest = {
+        success: false,
+        error: apiError.message,
+        status: apiError.response?.status,
+        statusText: apiError.response?.statusText,
+      };
+    }
+
+    res.json({
+      status: 'success',
+      hasKey: true,
+      keyPreview,
+      keyLength,
+      apiTest,
+      environment: config.NODE_ENV,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+    });
+  }
+});
+
 // ============================================
 // WEBSOCKET HANDLING
 // ============================================
