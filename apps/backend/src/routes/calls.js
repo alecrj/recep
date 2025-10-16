@@ -252,12 +252,23 @@ router.ws('/stream', async (ws, req) => {
           });
 
           // Send initial greeting
-          await sendAIResponse(
-            callData.conversation.getInstantResponse() || "Hello, how can I help you?",
-            callData,
-            ws,
-            streamSid
-          );
+          try {
+            const greeting = callData.conversation.getInstantResponse() || "Hello, how can I help you?";
+            logger.info('Sending initial greeting', {
+              greeting: greeting.substring(0, 50),
+              hasStreamSid: !!streamSid,
+              callSid
+            });
+            await sendAIResponse(greeting, callData, ws, streamSid);
+            logger.info('Initial greeting sent successfully', { callSid });
+          } catch (greetingError) {
+            logger.error('CRITICAL: Failed to send initial greeting', {
+              error: greetingError.message,
+              stack: greetingError.stack,
+              callSid,
+              streamSid
+            });
+          }
           break;
 
         case 'media':
@@ -449,18 +460,26 @@ async function sendAIResponse(text, callData, ws, streamSid) {
 
     logger.info('Starting streaming TTS', {
       text: text.substring(0, 100),
+      optimizedText: optimizedText.substring(0, 100),
+      voiceId,
       callSid: callData.call.callSid,
     });
 
     // STREAMING PIPELINE:
     // 1. Start ElevenLabs TTS stream (MP3 chunks)
+    logger.info('Step 1: Calling ElevenLabs textToSpeechStream', { callSid: callData.call.callSid });
     const mp3Stream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
+    logger.info('Step 1 complete: Got MP3 stream', { callSid: callData.call.callSid });
 
     // 2. Pipe through FFmpeg for real-time MP3 → μ-law conversion
+    logger.info('Step 2: Converting MP3 to μ-law', { callSid: callData.call.callSid });
     const mulawStream = audioService.convertMP3StreamToMulaw(mp3Stream);
+    logger.info('Step 2 complete: Got μ-law stream', { callSid: callData.call.callSid });
 
     // 3. Send μ-law chunks to Twilio as they arrive
+    logger.info('Step 3: Sending streaming audio to Twilio', { callSid: callData.call.callSid });
     await audioService.sendStreamingAudioToTwilio(ws, mulawStream, streamSid);
+    logger.info('Step 3 complete: Audio sent', { callSid: callData.call.callSid });
 
     const totalTime = Date.now() - startTime;
 
@@ -481,6 +500,9 @@ async function sendAIResponse(text, callData, ws, streamSid) {
 
     // Mark AI as done speaking even on error
     callData.conversation.setAISpeaking(false);
+
+    // Re-throw to propagate error
+    throw error;
   }
 }
 
