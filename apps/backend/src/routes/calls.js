@@ -465,20 +465,20 @@ async function sendAIResponse(text, callData, ws, streamSid) {
       callSid: callData.call.callSid,
     });
 
-    // STREAMING PIPELINE:
-    // 1. Start ElevenLabs TTS stream (MP3 chunks)
-    logger.info('Step 1: Calling ElevenLabs textToSpeechStream', { callSid: callData.call.callSid });
-    const mp3Stream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
-    logger.info('Step 1 complete: Got MP3 stream', { callSid: callData.call.callSid });
+    // NON-STREAMING PIPELINE (for free tier ElevenLabs):
+    // 1. Generate full audio with ElevenLabs
+    logger.info('Step 1: Calling ElevenLabs textToSpeech (non-streaming)', { callSid: callData.call.callSid });
+    const audioResult = await elevenlabsService.textToSpeech(optimizedText, voiceId);
+    logger.info('Step 1 complete: Got audio buffer', { size: audioResult.audio.length, callSid: callData.call.callSid });
 
-    // 2. Pipe through FFmpeg for real-time MP3 → μ-law conversion
+    // 2. Convert MP3 to μ-law
     logger.info('Step 2: Converting MP3 to μ-law', { callSid: callData.call.callSid });
-    const mulawStream = audioService.convertMP3StreamToMulaw(mp3Stream);
-    logger.info('Step 2 complete: Got μ-law stream', { callSid: callData.call.callSid });
+    const mulawBuffer = await audioService.convertMP3ForTwilio(audioResult.audio);
+    logger.info('Step 2 complete: Got μ-law buffer', { size: mulawBuffer.length, callSid: callData.call.callSid });
 
-    // 3. Send μ-law chunks to Twilio as they arrive
-    logger.info('Step 3: Sending streaming audio to Twilio', { callSid: callData.call.callSid });
-    await audioService.sendStreamingAudioToTwilio(ws, mulawStream, streamSid);
+    // 3. Send audio to Twilio
+    logger.info('Step 3: Sending audio to Twilio', { callSid: callData.call.callSid });
+    await audioService.sendAudioToTwilio(ws, mulawBuffer, streamSid);
     logger.info('Step 3 complete: Audio sent', { callSid: callData.call.callSid });
 
     const totalTime = Date.now() - startTime;
