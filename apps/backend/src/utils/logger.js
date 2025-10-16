@@ -18,16 +18,18 @@ const logger = winston.createLogger({
   ],
 });
 
-// Console logging in development
-if (config.NODE_ENV !== 'production') {
-  logger.add(
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      ),
-    })
-  );
-}
+// Console logging (always enabled for Railway/cloud platforms)
+logger.add(
+  new winston.transports.Console({
+    format: winston.format.combine(
+      config.NODE_ENV === 'production'
+        ? winston.format.simple()
+        : winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple()
+          ),
+    ),
+  })
+);
 
 module.exports = logger;
