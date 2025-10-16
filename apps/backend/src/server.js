@@ -154,6 +154,7 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
 
     // Try to fetch voices (simple API test)
     let apiTest = null;
+    let voices = [];
     try {
       const response = await axios.get('https://api.elevenlabs.io/v1/voices', {
         headers: { 'xi-api-key': apiKey },
@@ -163,6 +164,12 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
         success: true,
         voiceCount: response.data.voices?.length || 0,
       };
+      // Get first 5 voices with their IDs
+      voices = response.data.voices.slice(0, 5).map(v => ({
+        voice_id: v.voice_id,
+        name: v.name,
+        category: v.category
+      }));
     } catch (apiError) {
       apiTest = {
         success: false,
@@ -172,12 +179,49 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
       };
     }
 
+    // Test TTS streaming with a simple phrase using the first available voice
+    let ttsTest = null;
+    if (voices.length > 0) {
+      try {
+        const testVoiceId = voices[0].voice_id;
+        const ttsResponse = await axios.post(
+          `https://api.elevenlabs.io/v1/text-to-speech/${testVoiceId}/stream`,
+          {
+            text: 'Test',
+            model_id: 'eleven_turbo_v2_5',
+          },
+          {
+            headers: {
+              'xi-api-key': apiKey,
+              'Content-Type': 'application/json',
+            },
+            timeout: 5000,
+            responseType: 'arraybuffer'
+          }
+        );
+        ttsTest = {
+          success: true,
+          voiceId: testVoiceId,
+          audioSize: ttsResponse.data.length
+        };
+      } catch (ttsError) {
+        ttsTest = {
+          success: false,
+          error: ttsError.message,
+          status: ttsError.response?.status,
+          statusText: ttsError.response?.statusText,
+        };
+      }
+    }
+
     res.json({
       status: 'success',
       hasKey: true,
       keyPreview,
       keyLength,
       apiTest,
+      ttsTest,
+      voices,
       environment: config.NODE_ENV,
     });
   } catch (error) {
