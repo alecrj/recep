@@ -181,11 +181,15 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
       };
     }
 
-    // Test TTS streaming with a simple phrase using the first available voice
-    let ttsTest = null;
+    // Test BOTH streaming and non-streaming TTS
+    let ttsStreamTest = null;
+    let ttsNonStreamTest = null;
+
     if (voices.length > 0) {
+      const testVoiceId = voices[0].voice_id;
+
+      // Test streaming TTS
       try {
-        const testVoiceId = voices[0].voice_id;
         const ttsResponse = await axios.post(
           `https://api.elevenlabs.io/v1/text-to-speech/${testVoiceId}/stream`,
           {
@@ -201,17 +205,46 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
             responseType: 'arraybuffer'
           }
         );
-        ttsTest = {
+        ttsStreamTest = {
           success: true,
           voiceId: testVoiceId,
           audioSize: ttsResponse.data.length
         };
       } catch (ttsError) {
-        ttsTest = {
+        ttsStreamTest = {
           success: false,
           error: ttsError.message,
           status: ttsError.response?.status,
-          statusText: ttsError.response?.statusText,
+        };
+      }
+
+      // Test non-streaming TTS (without /stream endpoint)
+      try {
+        const ttsResponse = await axios.post(
+          `https://api.elevenlabs.io/v1/text-to-speech/${testVoiceId}`,
+          {
+            text: 'Test',
+            model_id: 'eleven_monolingual_v1',  // Free tier model
+          },
+          {
+            headers: {
+              'xi-api-key': apiKey,
+              'Content-Type': 'application/json',
+            },
+            timeout: 5000,
+            responseType: 'arraybuffer'
+          }
+        );
+        ttsNonStreamTest = {
+          success: true,
+          voiceId: testVoiceId,
+          audioSize: ttsResponse.data.length
+        };
+      } catch (ttsError) {
+        ttsNonStreamTest = {
+          success: false,
+          error: ttsError.message,
+          status: ttsError.response?.status,
         };
       }
     }
@@ -222,7 +255,8 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
       keyPreview,
       keyLength,
       apiTest,
-      ttsTest,
+      ttsStreamTest,
+      ttsNonStreamTest,
       voices,
       environment: config.NODE_ENV,
     });
