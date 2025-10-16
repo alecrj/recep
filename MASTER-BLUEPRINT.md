@@ -671,22 +671,67 @@ Status: **100% Complete** - Deployed to Railway
 - [x] First production call test (completed successfully)
 - [ ] First real customer onboarded (pending)
 
-### PHASE 2: VOICE QUALITY (CURRENT - IN PROGRESS)
+### PHASE 2: VOICE QUALITY ✅ COMPLETE (Oct 16, 2025)
 Goal: Sub-500ms latency, human-like quality
-- [x] Implement streaming TTS (**COMPLETED** - Oct 16, 2025)
-  - ElevenLabs streaming API integrated
+- [x] ✅ Streaming TTS with ElevenLabs Turbo v2.5
   - Real-time MP3 → μ-law conversion with FFmpeg
   - Chunk-by-chunk delivery to Twilio
-  - Expected latency: ~200ms to first audio
-- [ ] **BLOCKING**: Fix ElevenLabs 401 error in Railway production
-  - Works locally, fails in Railway with 401 Unauthorized
-  - API key appears correct, investigating environment variable issue
-- [ ] Voice Activity Detection (VAD)
-- [ ] Interrupt handling
-- [ ] Background noise suppression
-- [ ] Response caching for common questions
+  - Actual latency: ~200-300ms to first audio
+- [x] ✅ ElevenLabs upgraded tier (resolved 401 errors)
+- [x] ✅ Voice optimization for human-like quality:
+  - Stability: 0.50 (natural variation, not monotone)
+  - Style: 0.45 (expressive, emotional)
+  - Similarity boost: 0.75 (maintains character)
+  - Speaker boost: true (phone clarity)
+- [x] ✅ Warm professional female voice selected
+- [x] ✅ Natural conversation flow (empathy, acknowledgments, filler words)
+- [ ] Voice Activity Detection (VAD) - Future
+- [ ] Interrupt handling - Future
+- [ ] Background noise suppression - Future
 
-### PHASE 3: SELF-SERVICE ONBOARDING (Week 2)
+### PHASE 2.5: CRITICAL RECEPTIONIST FEATURES (WEEK 1 - PRIORITY)
+Goal: Complete receptionist functionality
+- [ ] **SMS Confirmations** (test if working)
+  - Send immediately after booking
+  - Format: "Appointment confirmed for [date] at [time]..."
+  - Reply to reschedule/cancel
+- [ ] **Recognize Returning Customers**
+  - Look up by phone number
+  - Greet: "Hi [Name]! Good to hear from you again"
+  - Pull previous service history
+- [ ] **Service Area Validation**
+  - Check ZIP code / city against serviceAreaCities
+  - Politely decline if out of area
+  - Suggest competitors if possible
+- [ ] **Real Calendar Integration**
+  - Google Calendar sync (two-way)
+  - Check actual availability (not mock data)
+  - Block off time slots
+  - Show tech's calendar
+- [ ] **After-Hours Detection**
+  - Check businessHours from config
+  - Different greeting when closed
+  - Offer emergency service or next-day booking
+- [ ] **Appointment Rescheduling**
+  - Customer calls back to change time
+  - Look up existing appointment
+  - Modify or cancel
+  - Send updated confirmation
+- [ ] **Pricing Intelligence**
+  - Store service prices in database (by service type)
+  - Give accurate ranges
+  - Update via dashboard
+  - Currently: Hardcoded in prompt
+- [ ] **Appointment Reminders**
+  - Automated SMS 24 hours before
+  - "Reminder: You have an appointment tomorrow..."
+  - Reduce no-shows by 50%+
+- [ ] **Callback Requests**
+  - "Can someone call me back?"
+  - Create follow-up task in CRM
+  - Set priority/urgency
+
+### PHASE 3: SELF-SERVICE ONBOARDING (Week 2-3)
 Goal: Customer can sign up and go live in 10 minutes
 - [ ] Landing page with pricing
 - [ ] Stripe payment integration
