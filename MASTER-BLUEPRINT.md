@@ -148,6 +148,175 @@ FEATURES:
 
 ---
 
+## 📞 WHAT A REAL HVAC RECEPTIONIST DOES (Our Blueprint)
+
+### **Call Flow Scenarios**
+
+#### **Scenario 1: Emergency Call (15% of calls)**
+**Customer**: "My heater stopped working and it's 20 degrees outside!"
+
+**Real Receptionist Does:**
+1. **Immediate empathy**: "Oh no, that's terrible, especially in this cold!"
+2. **Triage urgency**: "Do you have any heat at all? Any gas smell?"
+3. **Get basics fast**: Name, phone, address
+4. **Check for immediate danger**: Gas, CO, flooding, extreme temps
+5. **Either**:
+   - Transfer to on-call tech immediately: "Let me get you to our emergency tech right now"
+   - OR book emergency same-day: "I can get someone there in 2 hours"
+6. **Confirm contact**: "I'm texting you the tech's number now"
+7. **Set expectations**: "He'll call you in 5 minutes to confirm"
+
+#### **Scenario 2: Standard Service Call (60% of calls)**
+**Customer**: "My AC isn't cooling very well"
+
+**Real Receptionist Does:**
+1. **Friendly greeting**: "Thanks for calling Bob's HVAC! This is Sarah, how can I help?"
+2. **Let them explain**: Don't interrupt, let them describe the problem
+3. **Ask clarifying questions**:
+   - "When did you first notice this?"
+   - "Is it blowing air at all?"
+   - "Have you changed the filter recently?"
+4. **Get customer info** (conversationally, not like a form):
+   - "What's your name?" → "Got it, and the best number for you?"
+   - "What's the address where the unit is?"
+5. **Check availability**: "Let me see what I have... I've got tomorrow afternoon around 2, does that work?"
+6. **Alternative if needed**: "If you need it sooner, I have Thursday morning at 9?"
+7. **Confirm details**: "Perfect, so I've got you down for Friday at 2pm for AC not cooling"
+8. **Set expectations**: "The tech will call 30 minutes before arriving"
+9. **Mention pricing**: "Service call is $89, then if you need repairs the tech will give you a price before starting"
+10. **Send confirmation**: "I'm texting you a confirmation right now"
+
+#### **Scenario 3: Pricing/Quote Call (10% of calls)**
+**Customer**: "How much for a new AC unit?"
+
+**Real Receptionist Does:**
+1. **Don't give exact prices**: "Great question! It really depends on the size of your home and what system you need"
+2. **Give ranges**: "Typically we see anywhere from $3,500 to $12,000 depending on the system"
+3. **Offer free estimate**: "But the best thing is to have someone come out and give you a free quote. When works for you?"
+4. **Book appointment**: Same process as Scenario 2
+5. **Explain process**: "Tech will measure your space, check your ducts, and give you a few options with exact prices"
+
+#### **Scenario 4: Existing Customer Callback (10% of calls)**
+**Customer**: "Hi, I'm calling back about my appointment"
+
+**Real Receptionist Does:**
+1. **Look up customer**: "Sure! What's your name?" → Search system
+2. **Pull up their info**: "Okay I see you, John Smith, appointment Friday at 2?"
+3. **Handle request**:
+   - **Reschedule**: "No problem, what works better for you?"
+   - **Cancel**: "I can cancel that for you. Is everything okay with the AC now?"
+   - **Add info**: "Let me add that note for the tech"
+   - **Question**: Answer based on their upcoming appointment
+
+#### **Scenario 5: Wrong Number / Not Service Area (5% of calls)**
+**Customer**: "Do you service Orlando?"
+
+**Real Receptionist Does:**
+1. **Polite**: "We're actually based in Phoenix, so Orlando's outside our area"
+2. **Helpful**: "But I'd recommend calling [local company if known] or searching 'HVAC Orlando'"
+3. **Thank them**: "Sorry we couldn't help, but thanks for calling!"
+
+---
+
+### **What Information Receptionist MUST Collect (for service call)**
+
+#### **Critical (Can't book without)**:
+- ✅ Name
+- ✅ Phone number
+- ✅ Address (where the unit is)
+- ✅ Problem description
+- ✅ Preferred appointment time
+
+#### **Nice to Have**:
+- Email (for confirmation)
+- Alternate contact
+- How urgent (today vs. this week)
+- When problem started
+- Model/brand of system
+- Age of system
+- Previous service history
+
+---
+
+### **Receptionist "Soft Skills" (What Makes Them Human)**
+
+#### **1. Empathy**
+- "Oh no, that's the worst!"
+- "Ugh, I'm so sorry you're dealing with that"
+- "In this heat? That's terrible"
+- "I totally understand, let's get you taken care of"
+
+#### **2. Active Listening**
+- Let customer finish talking
+- Don't interrupt with next question
+- Acknowledge what they said: "Got it" "Okay" "I hear you"
+- Repeat back key details: "So the AC is running but not cooling?"
+
+#### **3. Conversational Flow**
+- **NOT**: "What is your name? What is your phone number? What is your address?"
+- **YES**: "What's your name?" → [they answer] → "Perfect, and the best number for you?" → [they answer] → "Got it, and where are you at?"
+
+#### **4. Setting Expectations**
+- "Tech will call 30 min before"
+- "Service call is $89, then we'll give you a price"
+- "Should take about an hour"
+- "He'll have parts on the truck for most common repairs"
+
+#### **5. Handling Objections**
+- **"That's expensive"**: "I totally get it. The good news is we'll give you the exact price before starting any work"
+- **"Can you come today?"**: "Let me check... I don't have anything today, but I can get you first thing tomorrow morning?"
+- **"I need to think about it"**: "Of course! No pressure. When would you like me to call you back?"
+
+---
+
+### **Common Questions Receptionist Answers**
+
+1. **"What are your hours?"** → "We're open Monday-Friday 8 to 6, and we have 24/7 emergency service"
+
+2. **"Do you service my area?"** → Check against serviceAreaCities or ZIP codes
+
+3. **"How much does [service] cost?"** → Give range, offer free estimate
+
+4. **"How long does it take?"** → "Usually about an hour for a repair, but depends what the tech finds"
+
+5. **"Do you have emergency service?"** → "Absolutely, we have techs on call 24/7"
+
+6. **"What brands do you work on?"** → "We work on all major brands - Carrier, Trane, Lennox, etc."
+
+7. **"Are you licensed and insured?"** → "Yes, we're fully licensed and insured"
+
+8. **"Do you offer financing?"** → "Yes, we offer financing on installations and bigger repairs"
+
+9. **"Can I get same-day service?"** → Check availability
+
+10. **"What payment methods do you accept?"** → "Cash, check, and all major credit cards"
+
+---
+
+### **Receptionist Workflow (Behind the Scenes)**
+
+#### **When Call Comes In:**
+1. ✅ Answer warmly
+2. ✅ Listen to problem
+3. ✅ Assess urgency (emergency vs. routine)
+4. ✅ Collect customer info
+5. ✅ Check calendar availability
+6. ✅ Book appointment
+7. ✅ Create customer record (if new)
+8. ✅ Update existing record (if returning)
+9. ✅ Send SMS confirmation
+10. ✅ Add notes for tech
+11. ✅ Set reminder (day before)
+
+#### **After Call:**
+- Update CRM
+- Send confirmation text/email
+- Add to calendar
+- Notify tech if emergency
+- Set follow-up reminder
+
+---
+
 ## 🎭 THE COMPLETE CUSTOMER JOURNEY
 
 ### **THE GOAL: 5 Minutes from Ad Click to Live AI Receptionist**
