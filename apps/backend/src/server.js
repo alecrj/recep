@@ -88,10 +88,10 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '2.2.0-human-like',  // Human-like voice + repetition fixed
+    version: '2.3.0-ultra-natural',  // Maximum naturalness optimizations
     status: 'running',
-    lastUpdate: '2025-10-16 22:00 UTC',
-    optimizations: 'Streaming GPT + Natural voice settings + No repetition',
+    lastUpdate: '2025-10-16 22:15 UTC',
+    optimizations: 'Enhanced prompt + Higher temperature + Simplified greeting',
     expectedLatency: 'Sub-500ms to first audio',
     endpoints: {
       health: '/health',

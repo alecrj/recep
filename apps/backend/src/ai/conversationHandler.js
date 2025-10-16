@@ -36,25 +36,14 @@ class ConversationHandler {
 
   getInstantResponse() {
     const businessName = this.businessConfig.businessName || 'the company';
-    const agentName = this.businessConfig.aiAgentName || 'Belle';
 
-    // Ultra-natural greetings (exactly how a real receptionist answers)
-    const greetings = [
-      `Thank you for calling ${businessName}, this is ${agentName}. How can I help you?`,
-      `Thanks for calling ${businessName}, ${agentName} speaking. What can I do for you?`,
-      `${businessName}, this is ${agentName}. How can I help you today?`,
-      `Good ${this.getTimeOfDay()}! Thanks for calling ${businessName}, ${agentName} here. What can I do for you?`,
-      `Thank you for calling ${businessName}, ${agentName} speaking. How can I help you?`
-    ];
-
-    // Use custom greeting if configured, otherwise pick a natural one
+    // Use custom greeting if configured
     if (this.businessConfig.greetingMessage) {
       return this.businessConfig.greetingMessage;
     }
 
-    // Randomly pick a greeting for variety (deterministic based on call time)
-    const index = Date.now() % greetings.length;
-    return greetings[index];
+    // Simple, natural greeting - exactly how receptionists answer
+    return `Thanks for calling ${businessName}, how can we help?`;
   }
 
   getTimeOfDay() {
