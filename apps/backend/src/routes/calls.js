@@ -314,7 +314,8 @@ router.ws('/stream', async (ws, req) => {
 // ============================================
 
 /**
- * Process user speech and generate AI response
+ * Process user speech and generate AI response with STREAMING
+ * This dramatically reduces latency by starting TTS as soon as we have a complete sentence
  */
 async function processUserSpeech(userText, callData, ws, promptBuilder, streamSid) {
   const startTime = Date.now();
@@ -332,17 +333,93 @@ async function processUserSpeech(userText, callData, ws, promptBuilder, streamSi
     const messages = promptBuilder.buildMessages(userText);
     const functions = promptBuilder.getFunctionDefinitions();
 
-    // Get AI response
-    const aiResponse = await openaiService.generateResponse(messages, functions);
+    // STREAMING RESPONSE - Start TTS as soon as we have complete sentences
+    const stream = await openaiService.generateResponseStream(messages, functions);
+
+    let fullText = '';
+    let sentenceBuffer = '';
+    let functionCall = null;
+    let hasStartedSpeaking = false;
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+
+      // Handle function calls
+      if (delta?.function_call) {
+        if (!functionCall) {
+          functionCall = { name: delta.function_call.name, arguments: '' };
+        }
+        if (delta.function_call.arguments) {
+          functionCall.arguments += delta.function_call.arguments;
+        }
+        continue;
+      }
+
+      // Handle text content
+      const token = delta?.content || '';
+      if (!token) continue;
+
+      fullText += token;
+      sentenceBuffer += token;
+
+      // Check if we have a complete sentence (ends with . ! ? or has 2+ sentences worth of tokens)
+      const sentenceEnders = /[.!?]\s*$/;
+      const hasEnoughTokens = sentenceBuffer.length > 50; // ~10-15 words
+
+      if (sentenceEnders.test(sentenceBuffer) || (hasEnoughTokens && token.includes(' '))) {
+        // Send this sentence immediately for TTS
+        const textToSpeak = sentenceBuffer.trim();
+        if (textToSpeak.length > 5) { // Don't send tiny fragments
+          logger.info('Streaming sentence to TTS', {
+            text: textToSpeak.substring(0, 50),
+            hasStartedSpeaking,
+            callSid: callData.call.callSid
+          });
+
+          if (!hasStartedSpeaking) {
+            const firstTokenTime = Date.now() - startTime;
+            logger.info('Time to first audio', { latency: firstTokenTime, callSid: callData.call.callSid });
+            hasStartedSpeaking = true;
+          }
+
+          await sendAIResponse(textToSpeak, callData, ws, streamSid);
+          sentenceBuffer = ''; // Reset buffer
+        }
+      }
+    }
+
+    // Send any remaining text
+    if (sentenceBuffer.trim().length > 0) {
+      await sendAIResponse(sentenceBuffer.trim(), callData, ws, streamSid);
+    }
 
     const responseTime = Date.now() - startTime;
     callData.conversation.recordResponseTime(responseTime);
 
-    logger.info('AI response generated', {
+    logger.info('AI streaming response complete', {
       responseTime,
-      hasFunction: !!aiResponse.functionCall,
-      textLength: aiResponse.text?.length,
+      hasFunction: !!functionCall,
+      textLength: fullText.length,
+      callSid: callData.call.callSid,
     });
+
+    // Parse function call if present
+    let aiResponse = {
+      text: fullText.trim(),
+      intent: openaiService.detectIntent(fullText),
+      functionCall: null,
+    };
+
+    if (functionCall) {
+      try {
+        aiResponse.functionCall = {
+          name: functionCall.name,
+          arguments: JSON.parse(functionCall.arguments),
+        };
+      } catch (error) {
+        logger.error('Failed to parse function call', { error: error.message });
+      }
+    }
 
     // Execute function if AI decided to take action
     if (aiResponse.functionCall) {

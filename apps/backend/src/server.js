@@ -88,11 +88,11 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '2.0.0-optimized-latency-pipeline',  // MAJOR UPDATE - Sub-1s latency!
+    version: '2.1.0-full-streaming-pipeline',  // STREAMING GPT - Retell/Vapi level!
     status: 'running',
-    lastUpdate: '2025-10-16 21:00 UTC',
-    optimizations: 'Direct μ-law audio (no FFmpeg), streaming GPT-4o, natural voice settings',
-    expectedLatency: 'Sub-1 second end-to-end',
+    lastUpdate: '2025-10-16 21:30 UTC',
+    optimizations: 'Full sentence-by-sentence streaming, direct μ-law, GPT-4o streaming',
+    expectedLatency: 'Sub-500ms to first audio (Retell/Vapi competitive)',
     endpoints: {
       health: '/health',
       auth: '/api/auth',
