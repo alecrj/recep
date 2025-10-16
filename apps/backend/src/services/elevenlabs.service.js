@@ -82,9 +82,9 @@ class ElevenLabsService {
         text,
         model_id: 'eleven_turbo_v2_5',  // Fastest model with high quality
         voice_settings: {
-          stability: 0.55,           // Balanced = clear but natural variation
-          similarity_boost: 0.75,    // Maintain voice character
-          style: 0.30,               // Some expressiveness (not robotic)
+          stability: 0.45,           // Lower = more natural, human-like variation
+          similarity_boost: 0.70,    // Maintain voice character
+          style: 0.50,               // Higher = more expressive and emotional (human-like)
           use_speaker_boost: true,   // Enhances clarity for phone calls
         },
         optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)

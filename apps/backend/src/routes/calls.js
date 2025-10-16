@@ -479,12 +479,12 @@ async function processUserSpeech(userText, callData, ws, promptBuilder, streamSi
       }
     }
 
-    // Send AI response back to caller
+    // Add AI turn to conversation history (already sent via streaming above)
     if (aiResponse.text) {
       callData.conversation.addAITurn(aiResponse.text, aiResponse.intent);
-      await sendAIResponse(aiResponse.text, callData, ws, streamSid);
+      // NOTE: We already sent the audio via streaming above, don't send again!
     } else {
-      // Last resort fallback
+      // Last resort fallback (only if streaming didn't produce any text)
       logger.warn('No response text available after all attempts');
       const fallbackText = "Let me check on that for you. One moment...";
       callData.conversation.addAITurn(fallbackText, aiResponse.intent);
