@@ -88,8 +88,10 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '1.0.0',
+    version: '1.0.1-non-streaming-tts',  // Updated to track deployment
     status: 'running',
+    lastUpdate: '2025-10-16 18:15 UTC',
+    ttsMode: 'non-streaming (free tier compatible)',
     endpoints: {
       health: '/health',
       auth: '/api/auth',
