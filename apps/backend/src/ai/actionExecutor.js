@@ -93,28 +93,41 @@ class ActionExecutor {
 
   async transferCall(args, context) {
     try {
-      // Get business owner phone
+      // Get business config for emergency contact
       const business = await prisma.business.findUnique({
         where: { id: context.businessId },
+        include: { config: true },
       });
+
+      // Determine transfer number based on urgency
+      let transferNumber = business.ownerPhone;
+      let transferTo = 'our team';
+
+      if (args.isEmergency && business.config?.emergencyContactPhone) {
+        transferNumber = business.config.emergencyContactPhone;
+        transferTo = business.config.emergencyContactName || 'our emergency technician';
+      } else if (business.config?.afterHoursPhone) {
+        transferNumber = business.config.afterHoursPhone;
+      }
 
       // Update call status
       await prisma.call.update({
         where: { id: context.callId },
         data: {
-          intent: 'EMERGENCY',
+          intent: args.isEmergency ? 'EMERGENCY' : 'QUESTION',
         },
       });
 
       logger.info('Transferring call', {
         reason: args.reason,
         isEmergency: args.isEmergency,
+        transferTo,
       });
 
       return {
         success: true,
-        transferNumber: business.ownerPhone,
-        message: 'Let me connect you with someone who can help right away.',
+        transferNumber,
+        message: `Let me connect you with ${transferTo} right away.`,
       };
     } catch (error) {
       logger.error('Failed to transfer call', { error: error.message });

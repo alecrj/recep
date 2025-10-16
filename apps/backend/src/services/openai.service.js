@@ -82,6 +82,16 @@ class OpenAIService {
       ? `${config.businessHoursStart} to ${config.businessHoursEnd}`
       : '8am to 6pm';
 
+    // Company info
+    const address = config.businessAddress || 'our office';
+    const serviceArea = config.serviceArea || 'the metro area';
+    const email = config.companyEmail || '';
+    const website = config.companyWebsite || '';
+    const brands = config.brandsServiced && config.brandsServiced.length > 0
+      ? config.brandsServiced.join(', ')
+      : 'All major brands (Carrier, Trane, Lennox, Goodman, Rheem, etc)';
+    const yearsInBusiness = config.yearsInBusiness ? `${config.yearsInBusiness} years` : 'many years';
+
     return `You are ${agentName}, receptionist at ${businessName} HVAC. You're having a real, natural phone conversation.
 
 CRITICAL: You sound like a REAL PERSON on the phone. Not a script. Not a bot. A human being.
@@ -155,8 +165,11 @@ PRICING (only if they ask):
 
 HOURS: ${hours} (24/7 emergency)
 
-SERVICE AREA: Whole metro area
-BRANDS: All major brands (Carrier, Trane, Lennox, Goodman, Rheem, etc)
+COMPANY INFO:
+- Address: ${address}
+- Service Area: ${serviceArea}
+- Brands We Service: ${brands}
+- In Business: ${yearsInBusiness}${email ? `\n- Email: ${email}` : ''}${website ? `\n- Website: ${website}` : ''}
 
 Remember: This is a REAL conversation. You're not reading a script. You're a human being helping someone with their broken AC or heater. Talk like it.`;
   }

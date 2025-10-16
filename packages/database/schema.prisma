@@ -74,6 +74,17 @@ model BusinessConfig {
   // Industry Configuration
   industry         String? @default("general") // HVAC, Plumbing, Electrical, etc.
 
+  // Business Location & Service Area
+  businessAddress     String?  @map("business_address")  // Physical address
+  serviceArea         String?  @map("service_area")      // "Entire metro area", "Within 30 miles", etc
+  serviceAreaCities   String[] @map("service_area_cities") @default([]) // ["Phoenix", "Scottsdale", "Tempe"]
+  serviceAreaZipCodes String[] @map("service_area_zip_codes") @default([]) // ["85001", "85002", etc]
+
+  // Emergency Contact Info
+  emergencyContactName  String? @map("emergency_contact_name")  // Tech name for emergency transfers
+  emergencyContactPhone String? @map("emergency_contact_phone") // Direct line to on-call tech
+  afterHoursPhone       String? @map("after_hours_phone")       // After hours emergency line
+
   // Business Info (JSON fields)
   businessHours       Json?   @map("business_hours") // {"monday": {"open": "09:00", "close": "17:00"}}
   businessHoursStart  String? @default("09:00") @map("business_hours_start") // Simple start time for availability
@@ -81,6 +92,13 @@ model BusinessConfig {
   appointmentDuration Int?    @default(60) @map("appointment_duration")      // Default appointment length in minutes
   services            Json?   // [{"name": "AC Repair", "priceMin": 150, "priceMax": 350, "duration": 60}]
   faqs                Json?   // [{"question": "...", "answer": "..."}]
+
+  // Branding & Messaging
+  companyEmail        String? @map("company_email")        // For appointment confirmations
+  companyWebsite      String? @map("company_website")
+  brandsServiced      String[] @map("brands_serviced") @default([]) // ["Carrier", "Trane", "Lennox"]
+  yearsInBusiness     Int?     @map("years_in_business")
+  licenseNumber       String?  @map("license_number")
 
   // Integration Tokens
   googleCalendarId            String?   @map("google_calendar_id")
