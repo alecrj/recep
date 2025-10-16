@@ -88,10 +88,10 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '2.1.2-streaming-with-mp3',  // FIXED: Back to working MP3 format
+    version: '2.2.0-human-like',  // Human-like voice + repetition fixed
     status: 'running',
-    lastUpdate: '2025-10-16 21:45 UTC',
-    optimizations: 'Full GPT streaming + PCM→μ-law conversion',
+    lastUpdate: '2025-10-16 22:00 UTC',
+    optimizations: 'Streaming GPT + Natural voice settings + No repetition',
     expectedLatency: 'Sub-500ms to first audio',
     endpoints: {
       health: '/health',
