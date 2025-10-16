@@ -88,9 +88,9 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '1.1.0-streaming-tts-enabled',  // NEW VERSION - Streaming enabled!
+    version: '1.1.1-diagnostic-endpoint-added',  // NEW VERSION - Added diagnostic endpoint!
     status: 'running',
-    lastUpdate: '2025-10-16 18:30 UTC',
+    lastUpdate: '2025-10-16 19:15 UTC',
     ttsMode: 'STREAMING with ElevenLabs Turbo (upgraded tier)',
     voiceOptimization: 'Human-like (stability: 0.50, style: 0.45)',
     endpoints: {
