@@ -127,6 +127,10 @@ app.use('/api/calls', callRoutes);
 const twilioRoutes = require('./routes/twilio');
 app.use('/api/twilio', twilioRoutes);
 
+// Test audio pipeline
+const testAudioRoutes = require('./routes/test-audio');
+app.use('/api/test-audio', testAudioRoutes);
+
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
   res.json({
