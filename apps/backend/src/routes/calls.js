@@ -543,17 +543,17 @@ async function sendAIResponse(text, callData, ws, streamSid) {
     });
 
     // STREAMING PIPELINE with GPT streaming (sub-500ms latency):
-    // 1. ElevenLabs streams PCM audio
+    // Using MP3 format (proven to work)
     logger.info('Starting ElevenLabs streaming TTS', { callSid: callData.call.callSid });
-    const pcmStream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
-    logger.info('Got PCM stream from ElevenLabs', { callSid: callData.call.callSid });
+    const mp3Stream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
+    logger.info('Got MP3 stream from ElevenLabs', { callSid: callData.call.callSid });
 
-    // 2. Convert PCM → μ-law in real-time
-    logger.info('Converting PCM to μ-law', { callSid: callData.call.callSid });
-    const mulawStream = audioService.convertPCMStreamToMulaw(pcmStream);
+    // Convert MP3 → μ-law in real-time
+    logger.info('Converting MP3 to μ-law', { callSid: callData.call.callSid });
+    const mulawStream = audioService.convertMP3StreamToMulaw(mp3Stream);
     logger.info('Got μ-law stream', { callSid: callData.call.callSid });
 
-    // 3. Stream to Twilio
+    // Stream to Twilio
     logger.info('Streaming audio to Twilio', { callSid: callData.call.callSid });
     await audioService.sendStreamingAudioToTwilio(ws, mulawStream, streamSid);
     logger.info('Streaming complete', { callSid: callData.call.callSid });

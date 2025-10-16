@@ -88,13 +88,13 @@ class ElevenLabsService {
           use_speaker_boost: true,   // Enhances clarity for phone calls
         },
         optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)
-        output_format: 'pcm_16000', // PCM for better compatibility with FFmpeg
+        output_format: 'mp3_44100_128', // Back to MP3 - we know this works
       },
       {
         headers: {
           'xi-api-key': config.ELEVENLABS_API_KEY,
           'Content-Type': 'application/json',
-          'Accept': 'audio/wav', // PCM audio
+          'Accept': 'audio/mpeg', // MP3 audio
         },
         responseType: 'stream', // Get stream instead of buffer
       }

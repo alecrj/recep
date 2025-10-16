@@ -88,7 +88,7 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '2.1.1-streaming-with-pcm',  // FIXED: PCM audio format
+    version: '2.1.2-streaming-with-mp3',  // FIXED: Back to working MP3 format
     status: 'running',
     lastUpdate: '2025-10-16 21:45 UTC',
     optimizations: 'Full GPT streaming + PCM→μ-law conversion',
