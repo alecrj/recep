@@ -29,6 +29,11 @@ expressWs(app, server);
 // MIDDLEWARE
 // ============================================
 
+// Trust proxy (required for Railway/production environments)
+if (config.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security
 app.use(helmet());
 
