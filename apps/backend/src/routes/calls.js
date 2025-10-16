@@ -421,6 +421,7 @@ async function processUserSpeech(userText, callData, ws, promptBuilder, streamSi
 
 /**
  * Send AI text response as speech to caller
+ * Uses STREAMING for dramatically reduced latency (~200ms to first audio)
  */
 async function sendAIResponse(text, callData, ws, streamSid) {
   try {
@@ -437,42 +438,35 @@ async function sendAIResponse(text, callData, ws, streamSid) {
     // Optimize text for speech
     const optimizedText = elevenlabsService.optimizeTextForSpeech(text);
 
-    // Convert to speech (MP3 from ElevenLabs)
-    const voiceId = callData.business.config?.aiVoiceId;
-    const audioResult = await elevenlabsService.textToSpeech(optimizedText, voiceId);
-
     // Add to transcript
     callData.transcript.push(`AI: ${text}`);
-
-    logger.info('AI speech generated', {
-      text: text.substring(0, 100),
-      mp3Size: audioResult.audio.length,
-      callSid: callData.call.callSid,
-      ttsTime: Date.now() - startTime,
-    });
 
     // Mark AI as speaking
     callData.conversation.setAISpeaking(true);
 
-    // Convert MP3 to μ-law
-    const conversionStartTime = Date.now();
-    const mulawBuffer = await audioService.convertMP3ForTwilio(audioResult.audio);
+    // Get voice ID from config
+    const voiceId = callData.business.config?.aiVoiceId;
 
-    const conversionTime = Date.now() - conversionStartTime;
+    logger.info('Starting streaming TTS', {
+      text: text.substring(0, 100),
+      callSid: callData.call.callSid,
+    });
 
-    // Send audio to Twilio via WebSocket
-    const sendStartTime = Date.now();
-    await audioService.sendAudioToTwilio(ws, mulawBuffer, streamSid);
+    // STREAMING PIPELINE:
+    // 1. Start ElevenLabs TTS stream (MP3 chunks)
+    const mp3Stream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
 
-    const sendTime = Date.now() - sendStartTime;
+    // 2. Pipe through FFmpeg for real-time MP3 → μ-law conversion
+    const mulawStream = audioService.convertMP3StreamToMulaw(mp3Stream);
+
+    // 3. Send μ-law chunks to Twilio as they arrive
+    await audioService.sendStreamingAudioToTwilio(ws, mulawStream, streamSid);
+
     const totalTime = Date.now() - startTime;
 
-    logger.info('AI response fully sent', {
+    logger.info('Streaming AI response complete', {
       text: text.substring(0, 100),
       totalTime,
-      ttsTime: Date.now() - startTime,
-      conversionTime,
-      sendTime,
       callSid: callData.call.callSid,
     });
 

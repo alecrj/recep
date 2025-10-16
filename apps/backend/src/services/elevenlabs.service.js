@@ -61,6 +61,48 @@ class ElevenLabsService {
     };
   }
 
+  /**
+   * Stream text-to-speech with real-time chunked audio delivery
+   * Returns a stream that emits audio chunks as they're generated
+   */
+  async textToSpeechStream(text, voiceId = 'pNInz6obpgDQGcFmaJgB') {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would stream speech', { text: text.substring(0, 50) });
+      // Return mock stream
+      const { Readable } = require('stream');
+      const mockStream = new Readable();
+      mockStream.push(Buffer.from('MOCK_AUDIO_DATA'));
+      mockStream.push(null);
+      return mockStream;
+    }
+
+    const response = await axios.post(
+      `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
+      {
+        text,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: {
+          stability: 0.65,
+          similarity_boost: 0.8,
+          style: 0.3,
+          use_speaker_boost: true,
+        },
+        optimize_streaming_latency: 4, // Max speed - start sending ASAP
+      },
+      {
+        headers: {
+          'xi-api-key': config.ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+        },
+        responseType: 'stream', // Get stream instead of buffer
+      }
+    );
+
+    logger.info('ElevenLabs streaming started', { textLength: text.length });
+    return response.data; // Return the readable stream
+  }
+
   optimizeTextForSpeech(text) {
     return text
       .replace(/\$/g, 'dollars')

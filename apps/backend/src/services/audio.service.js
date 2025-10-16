@@ -145,6 +145,107 @@ class AudioService {
   }
 
   /**
+   * Stream MP3 audio and convert to μ-law in real-time
+   * Processes chunks as they arrive for low-latency audio playback
+   *
+   * @param {ReadableStream} mp3Stream - Streaming MP3 audio from ElevenLabs
+   * @returns {PassThrough} - Stream that emits μ-law audio chunks
+   */
+  convertMP3StreamToMulaw(mp3Stream) {
+    const outputStream = new PassThrough();
+
+    logger.info('Starting streaming MP3 to μ-law conversion');
+
+    // Use FFmpeg to convert streaming MP3 to μ-law
+    const ffmpegCommand = ffmpeg(mp3Stream)
+      .inputFormat('mp3')
+      .audioCodec('pcm_mulaw')
+      .audioFrequency(8000)
+      .audioChannels(1)
+      .format('mulaw')
+      .on('start', (cmd) => {
+        logger.debug('FFmpeg streaming started', { command: cmd });
+      })
+      .on('error', (err) => {
+        logger.error('FFmpeg streaming error', { error: err.message });
+        outputStream.destroy(err);
+      })
+      .on('end', () => {
+        logger.info('FFmpeg streaming conversion complete');
+      });
+
+    // Pipe to output stream
+    ffmpegCommand.pipe(outputStream, { end: true });
+
+    return outputStream;
+  }
+
+  /**
+   * Send streaming audio to Twilio as it's converted
+   * Dramatically reduces latency by sending first audio within ~200ms
+   *
+   * @param {WebSocket} ws - Twilio Media Stream WebSocket
+   * @param {ReadableStream} mulawStream - Stream of μ-law audio chunks
+   * @param {string} streamSid - Twilio stream SID
+   * @returns {Promise<void>}
+   */
+  async sendStreamingAudioToTwilio(ws, mulawStream, streamSid) {
+    return new Promise((resolve, reject) => {
+      let firstChunkSent = false;
+      let totalBytesSent = 0;
+      const startTime = Date.now();
+
+      mulawStream.on('data', (chunk) => {
+        try {
+          // Convert chunk to base64
+          const payload = chunk.toString('base64');
+
+          // Send to Twilio
+          const message = {
+            event: 'media',
+            streamSid: streamSid,
+            media: {
+              payload: payload,
+            },
+          };
+
+          ws.send(JSON.stringify(message));
+
+          totalBytesSent += chunk.length;
+
+          if (!firstChunkSent) {
+            const timeToFirstAudio = Date.now() - startTime;
+            logger.info('First audio chunk sent', {
+              latency: timeToFirstAudio,
+              chunkSize: chunk.length
+            });
+            firstChunkSent = true;
+          }
+        } catch (error) {
+          logger.error('Error sending audio chunk', { error: error.message });
+          mulawStream.destroy();
+          reject(error);
+        }
+      });
+
+      mulawStream.on('end', () => {
+        const totalTime = Date.now() - startTime;
+        logger.info('Streaming audio complete', {
+          totalBytes: totalBytesSent,
+          totalTime,
+          estimatedDurationMs: (totalBytesSent / 8000) * 1000,
+        });
+        resolve();
+      });
+
+      mulawStream.on('error', (error) => {
+        logger.error('Stream error', { error: error.message });
+        reject(error);
+      });
+    });
+  }
+
+  /**
    * Send audio to Twilio via WebSocket
    *
    * Twilio accepts audio of ANY size - send it all at once for best results
