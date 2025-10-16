@@ -181,6 +181,43 @@ class AudioService {
   }
 
   /**
+   * Stream PCM audio and convert to μ-law in real-time
+   * For ElevenLabs PCM output
+   *
+   * @param {ReadableStream} pcmStream - Streaming PCM audio from ElevenLabs
+   * @returns {PassThrough} - Stream that emits μ-law audio chunks
+   */
+  convertPCMStreamToMulaw(pcmStream) {
+    const outputStream = new PassThrough();
+
+    logger.info('Starting streaming PCM to μ-law conversion');
+
+    // Use FFmpeg to convert streaming PCM to μ-law
+    const ffmpegCommand = ffmpeg(pcmStream)
+      .inputFormat('s16le') // PCM signed 16-bit little-endian
+      .inputOptions(['-ar 16000', '-ac 1']) // 16kHz mono
+      .audioCodec('pcm_mulaw')
+      .audioFrequency(8000)
+      .audioChannels(1)
+      .format('mulaw')
+      .on('start', (cmd) => {
+        logger.debug('FFmpeg PCM streaming started', { command: cmd });
+      })
+      .on('error', (err) => {
+        logger.error('FFmpeg PCM streaming error', { error: err.message });
+        outputStream.destroy(err);
+      })
+      .on('end', () => {
+        logger.info('FFmpeg PCM streaming conversion complete');
+      });
+
+    // Pipe to output stream
+    ffmpegCommand.pipe(outputStream, { end: true });
+
+    return outputStream;
+  }
+
+  /**
    * Send streaming audio to Twilio as it's converted
    * Dramatically reduces latency by sending first audio within ~200ms
    *

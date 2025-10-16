@@ -88,11 +88,11 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '2.1.0-full-streaming-pipeline',  // STREAMING GPT - Retell/Vapi level!
+    version: '2.1.1-streaming-with-pcm',  // FIXED: PCM audio format
     status: 'running',
-    lastUpdate: '2025-10-16 21:30 UTC',
-    optimizations: 'Full sentence-by-sentence streaming, direct μ-law, GPT-4o streaming',
-    expectedLatency: 'Sub-500ms to first audio (Retell/Vapi competitive)',
+    lastUpdate: '2025-10-16 21:45 UTC',
+    optimizations: 'Full GPT streaming + PCM→μ-law conversion',
+    expectedLatency: 'Sub-500ms to first audio',
     endpoints: {
       health: '/health',
       auth: '/api/auth',

@@ -88,13 +88,13 @@ class ElevenLabsService {
           use_speaker_boost: true,   // Enhances clarity for phone calls
         },
         optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)
-        output_format: 'ulaw_8000', // Direct Twilio format - NO CONVERSION NEEDED!
+        output_format: 'pcm_16000', // PCM for better compatibility with FFmpeg
       },
       {
         headers: {
           'xi-api-key': config.ELEVENLABS_API_KEY,
           'Content-Type': 'application/json',
-          'Accept': 'audio/basic', // μ-law audio type
+          'Accept': 'audio/wav', // PCM audio
         },
         responseType: 'stream', // Get stream instead of buffer
       }

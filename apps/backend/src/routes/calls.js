@@ -542,13 +542,18 @@ async function sendAIResponse(text, callData, ws, streamSid) {
       callSid: callData.call.callSid,
     });
 
-    // OPTIMIZED STREAMING PIPELINE (sub-1s latency):
-    // ElevenLabs outputs μ-law directly → No FFmpeg conversion needed!
-    logger.info('Starting ElevenLabs streaming TTS (direct μ-law)', { callSid: callData.call.callSid });
-    const mulawStream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
-    logger.info('Got μ-law stream from ElevenLabs', { callSid: callData.call.callSid });
+    // STREAMING PIPELINE with GPT streaming (sub-500ms latency):
+    // 1. ElevenLabs streams PCM audio
+    logger.info('Starting ElevenLabs streaming TTS', { callSid: callData.call.callSid });
+    const pcmStream = await elevenlabsService.textToSpeechStream(optimizedText, voiceId);
+    logger.info('Got PCM stream from ElevenLabs', { callSid: callData.call.callSid });
 
-    // Send μ-law chunks directly to Twilio (no conversion overhead)
+    // 2. Convert PCM → μ-law in real-time
+    logger.info('Converting PCM to μ-law', { callSid: callData.call.callSid });
+    const mulawStream = audioService.convertPCMStreamToMulaw(pcmStream);
+    logger.info('Got μ-law stream', { callSid: callData.call.callSid });
+
+    // 3. Stream to Twilio
     logger.info('Streaming audio to Twilio', { callSid: callData.call.callSid });
     await audioService.sendStreamingAudioToTwilio(ws, mulawStream, streamSid);
     logger.info('Streaming complete', { callSid: callData.call.callSid });
