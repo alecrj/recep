@@ -88,11 +88,11 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '1.1.1-diagnostic-endpoint-added',  // NEW VERSION - Added diagnostic endpoint!
+    version: '1.2.0-optimized-voice-clarity',  // NEW VERSION - Optimized for phone clarity!
     status: 'running',
-    lastUpdate: '2025-10-16 19:15 UTC',
+    lastUpdate: '2025-10-16 20:00 UTC',
     ttsMode: 'STREAMING with ElevenLabs Turbo (upgraded tier)',
-    voiceOptimization: 'Human-like (stability: 0.50, style: 0.45)',
+    voiceOptimization: 'Professional clarity (stability: 0.71, style: 0.0, HQ audio)',
     endpoints: {
       health: '/health',
       auth: '/api/auth',
