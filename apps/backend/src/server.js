@@ -88,11 +88,11 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '1.2.0-optimized-voice-clarity',  // NEW VERSION - Optimized for phone clarity!
+    version: '1.3.0-ultra-natural-human-like',  // NEW VERSION - Maximum human-like quality!
     status: 'running',
-    lastUpdate: '2025-10-16 20:00 UTC',
-    ttsMode: 'STREAMING with ElevenLabs Turbo (upgraded tier)',
-    voiceOptimization: 'Professional clarity (stability: 0.71, style: 0.0, HQ audio)',
+    lastUpdate: '2025-10-16 20:30 UTC',
+    ttsMode: 'Belle voice with optimized clarity settings',
+    conversationOptimization: 'Natural flow, filler words, empathy, ONE question at a time',
     endpoints: {
       health: '/health',
       auth: '/api/auth',

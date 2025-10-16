@@ -36,13 +36,15 @@ class ConversationHandler {
 
   getInstantResponse() {
     const businessName = this.businessConfig.businessName || 'the company';
-    const agentName = this.businessConfig.aiAgentName || 'Sarah';
+    const agentName = this.businessConfig.aiAgentName || 'Belle';
 
-    // Natural, warm greeting
+    // Ultra-natural greetings (like a real receptionist would answer)
     const greetings = [
-      `Thanks for calling ${businessName}, this is ${agentName}. How can I help you today?`,
-      `${businessName}, ${agentName} speaking. What can I do for you?`,
-      `Good ${this.getTimeOfDay()}! You've reached ${businessName}. This is ${agentName}, what brings you in today?`
+      `${businessName}, this is ${agentName}!`,
+      `Good ${this.getTimeOfDay()}! ${businessName}, ${agentName} speaking.`,
+      `${businessName}, ${agentName} here. How can I help you?`,
+      `Hi! ${businessName}, this is ${agentName}.`,
+      `${businessName}, ${agentName} speaking!`
     ];
 
     // Use custom greeting if configured, otherwise pick a natural one
