@@ -1,6 +1,16 @@
-# AI Receptionist System
+# AI Receptionist for HVAC Companies
 
-A complete multi-tenant SaaS platform that replaces human receptionists with AI. Built for service businesses (HVAC, plumbing, contractors, etc.)
+An AI-powered receptionist SaaS platform built specifically for HVAC companies.
+
+## 📖 Documentation
+
+**All project documentation, business plans, technical architecture, and roadmap are in:**
+
+### **[MASTER-BLUEPRINT.md](./MASTER-BLUEPRINT.md)** ← READ THIS FIRST
+
+This is the single source of truth for everything about this project.
+
+---
 
 ## 🚀 Features
 
