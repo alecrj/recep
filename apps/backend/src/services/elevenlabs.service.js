@@ -80,14 +80,14 @@ class ElevenLabsService {
       `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
       {
         text,
-        model_id: 'eleven_turbo_v2_5',
+        model_id: 'eleven_turbo_v2_5',  // Fastest model with high quality
         voice_settings: {
-          stability: 0.65,
-          similarity_boost: 0.8,
-          style: 0.3,
-          use_speaker_boost: true,
+          stability: 0.50,           // Lower = more expressive, human-like variation
+          similarity_boost: 0.75,    // High = maintains voice character
+          style: 0.45,               // Higher = more expressive/emotional (KEY for human-like)
+          use_speaker_boost: true,   // Enhances clarity for phone calls
         },
-        optimize_streaming_latency: 4, // Max speed - start sending ASAP
+        optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)
       },
       {
         headers: {
