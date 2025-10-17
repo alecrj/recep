@@ -13,7 +13,7 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
 
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
 const VOICE = 'shimmer'; // shimmer = soft, warm, natural female voice
-const TEMPERATURE = 0.9; // Higher for more natural variation and less robotic
+const TEMPERATURE = 1.0; // Maximum variation for unpredictable, human-like delivery
 
 const LOG_EVENT_TYPES = [
   'error',
