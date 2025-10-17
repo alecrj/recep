@@ -88,10 +88,10 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'AI Receptionist API',
-    version: '3.0.0-HUMAN',  // Indistinguishable from human
+    version: '3.1.0-ULTRA-HUMAN',  // Sarah voice + Barge-in + Max expressiveness
     status: 'running',
-    lastUpdate: '2025-10-16 23:00 UTC',
-    optimizations: 'MAX voice expressiveness + 3-6 word responses + Ultra-brief prompt',
+    lastUpdate: '2025-10-16 23:30 UTC',
+    optimizations: 'Sarah voice (stability 0.15, style 0.85) + Barge-in + 3-6 word responses',
     expectedLatency: 'Sub-500ms to first audio',
     endpoints: {
       health: '/health',

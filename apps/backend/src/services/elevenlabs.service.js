@@ -14,12 +14,14 @@ class ElevenLabsService {
     }
   }
 
-  async textToSpeech(text, voiceId = 'pNInz6obpgDQGcFmaJgB') {
-    // Using Adam (professional, energetic, warm male voice)
-    // Other good options:
-    // - 'EXAVITQu4vr4xnSDxMaL' = Sarah (warm female)
-    // - 'ThT5KcBeYPX3keUQqHPh' = Dorothy (friendly female)
-    // - 'pNInz6obpgDQGcFmaJgB' = Adam (friendly male) <- USING THIS
+  async textToSpeech(text, voiceId = 'EXAVITQu4vr4xnSDxMaL') {
+    // DEFAULT VOICE: Sarah (EXAVITQu4vr4xnSDxMaL) - Oct 2025 best practice
+    // Most human-like voice for conversational AI phone calls
+    //
+    // Other premium options available:
+    // - 'IKne3meq5aSn9XLyUdCD' = Charlie (friendly male, very natural)
+    // - 'FGY2WhTYpPnrIDTdsKH5' = Laura (conversational female)
+    // - 'pNInz6obpgDQGcFmaJgB' = Adam (professional male)
 
     if (this.testMode) {
       logger.info('[TEST MODE] Would convert to speech', { text: text.substring(0, 50) });
@@ -33,12 +35,12 @@ class ElevenLabsService {
       `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
       {
         text,
-        model_id: 'eleven_turbo_v2_5', // Fastest model
+        model_id: 'eleven_turbo_v2_5', // Latest model (Oct 2025)
         voice_settings: {
-          stability: 0.65, // Higher for phone clarity
-          similarity_boost: 0.8, // Higher for natural sound
-          style: 0.3, // Lower for more consistent delivery
-          use_speaker_boost: true,
+          stability: 0.15,           // ULTRA LOW for natural variation
+          similarity_boost: 0.90,    // VERY HIGH for consistency
+          style: 0.85,               // MAXIMUM expressiveness
+          use_speaker_boost: true,   // Phone clarity
         },
         optimize_streaming_latency: 4, // Maximum speed
       },
@@ -65,7 +67,11 @@ class ElevenLabsService {
    * Stream text-to-speech with real-time chunked audio delivery
    * Returns a stream that emits audio chunks as they're generated
    */
-  async textToSpeechStream(text, voiceId = 'pNInz6obpgDQGcFmaJgB') {
+  async textToSpeechStream(text, voiceId = 'EXAVITQu4vr4xnSDxMaL') {
+    // DEFAULT VOICE: Sarah (EXAVITQu4vr4xnSDxMaL)
+    // Best for conversational AI as of Oct 2025 - warm, natural, emotionally expressive
+    // Can be overridden per-business via voiceId parameter
+
     if (this.testMode) {
       logger.info('[TEST MODE] Would stream speech', { text: text.substring(0, 50) });
       // Return mock stream
@@ -80,15 +86,15 @@ class ElevenLabsService {
       `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
       {
         text,
-        model_id: 'eleven_turbo_v2_5',  // Best quality for natural speech
+        model_id: 'eleven_turbo_v2_5',  // Latest model (Oct 2025) - fastest + highest quality
         voice_settings: {
-          stability: 0.20,           // VERY LOW = maximum expressiveness, sighs, natural pauses
-          similarity_boost: 0.85,    // HIGH = maintain voice character strongly
-          style: 0.80,               // VERY HIGH = maximum emotion, laughs, reacts, human-like
-          use_speaker_boost: true,   // Phone clarity
+          stability: 0.15,           // ULTRA LOW = maximum human variation, breaths, natural pauses, sighs
+          similarity_boost: 0.90,    // VERY HIGH = strong voice consistency and character
+          style: 0.85,               // MAXIMUM = natural reactions, laughs, "mm-hmm", emotional inflection
+          use_speaker_boost: true,   // Essential for phone call clarity
         },
-        optimize_streaming_latency: 4, // Max speed (start sending ASAP)
-        output_format: 'mp3_44100_128', // MP3 (proven to work)
+        optimize_streaming_latency: 4, // Max speed (start sending ASAP for sub-500ms latency)
+        output_format: 'mp3_44100_128', // MP3 44.1kHz (proven optimal for Twilio)
       },
       {
         headers: {
