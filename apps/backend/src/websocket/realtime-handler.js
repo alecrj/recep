@@ -11,8 +11,8 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
  * This is where the magic happens - direct audio-to-audio conversation
  */
 
-const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
-const VOICE = 'nova'; // nova = higher-pitched, bright, energetic female voice - perfect for receptionist
+const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
+const VOICE = 'shimmer'; // shimmer = soft, warm, natural female voice (was working before)
 const TEMPERATURE = 1.0; // Maximum variation for unpredictable, human-like delivery
 
 const LOG_EVENT_TYPES = [
@@ -105,17 +105,11 @@ function handleRealtimeConnection(ws, businessId) {
       openAiWs.send(JSON.stringify(sessionUpdate));
       logger.info('Session update sent successfully', { businessId });
 
-      // Send initial greeting - just trigger response.create
-      // The prompt at the top tells it how to greet
+      // Send initial greeting immediately (don't wait for user to speak)
       setTimeout(() => {
         const greetingEvent = {
           type: 'response.create',
-          response: {
-            modalities: ['audio', 'text'],
-            instructions: 'Greet the caller with a simple "Hello!" or "Hi there!" - keep it very brief, just one short phrase.'
-          }
         };
-
         logger.info('Triggering AI greeting', { businessId });
         openAiWs.send(JSON.stringify(greetingEvent));
       }, 250); // Small delay to ensure session is fully initialized
