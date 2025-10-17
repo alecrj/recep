@@ -66,11 +66,18 @@ function handleRealtimeConnection(ws, businessId) {
         businessName: business.name,
       };
 
+      const instructions = buildRealtimeInstructions(businessConfig);
+      logger.info('Built instructions', {
+        businessId,
+        instructionsLength: instructions.length,
+        preview: instructions.substring(0, 100)
+      });
+
       const sessionUpdate = {
         type: 'session.update',
         session: {
           modalities: ['text', 'audio'],
-          instructions: buildRealtimeInstructions(businessConfig),
+          instructions,
           voice: VOICE,
           input_audio_format: 'g711_ulaw', // Twilio uses μ-law
           output_audio_format: 'g711_ulaw',
@@ -90,10 +97,16 @@ function handleRealtimeConnection(ws, businessId) {
       logger.info('Sending session update to OpenAI', {
         businessId,
         voice: VOICE,
+        hasApiKey: !!config.OPENAI_API_KEY,
       });
       openAiWs.send(JSON.stringify(sessionUpdate));
+      logger.info('Session update sent successfully', { businessId });
     } catch (error) {
-      logger.error('Error initializing session', { error: error.message });
+      logger.error('Error initializing session', {
+        businessId,
+        error: error.message,
+        stack: error.stack
+      });
     }
   };
 
@@ -142,6 +155,7 @@ function handleRealtimeConnection(ws, businessId) {
   // OpenAI WebSocket event handlers
   openAiWs.on('open', () => {
     logger.info('Connected to OpenAI Realtime API', { businessId });
+    logger.info('OpenAI WebSocket URL', { url: OPENAI_REALTIME_URL });
     setTimeout(initializeSession, 100);
   });
 
@@ -214,12 +228,21 @@ function handleRealtimeConnection(ws, businessId) {
               audio: data.media.payload,
             };
             openAiWs.send(JSON.stringify(audioAppend));
+          } else {
+            logger.warn('OpenAI WebSocket not open, cannot send audio', {
+              readyState: openAiWs.readyState,
+              businessId
+            });
           }
           break;
 
         case 'start':
           streamSid = data.start.streamSid;
-          logger.info('Twilio stream started', { streamSid, businessId });
+          logger.info('Twilio stream started', {
+            streamSid,
+            businessId,
+            openAiWsState: openAiWs.readyState
+          });
           responseStartTimestampTwilio = null;
           latestMediaTimestamp = 0;
           break;
