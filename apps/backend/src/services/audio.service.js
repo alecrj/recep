@@ -221,19 +221,39 @@ class AudioService {
    * Send streaming audio to Twilio as it's converted
    * Dramatically reduces latency by sending first audio within ~200ms
    *
+   * SUPPORTS BARGE-IN: Stream can be interrupted by destroying it
+   *
    * @param {WebSocket} ws - Twilio Media Stream WebSocket
    * @param {ReadableStream} mulawStream - Stream of μ-law audio chunks
    * @param {string} streamSid - Twilio stream SID
+   * @param {Object} interruptSignal - Object with `interrupted` flag for barge-in
    * @returns {Promise<void>}
    */
-  async sendStreamingAudioToTwilio(ws, mulawStream, streamSid) {
+  async sendStreamingAudioToTwilio(ws, mulawStream, streamSid, interruptSignal = null) {
     return new Promise((resolve, reject) => {
       let firstChunkSent = false;
       let totalBytesSent = 0;
       const startTime = Date.now();
+      let wasInterrupted = false;
 
       mulawStream.on('data', (chunk) => {
         try {
+          // Check for barge-in interruption
+          if (interruptSignal && interruptSignal.interrupted) {
+            wasInterrupted = true;
+            logger.info('BARGE-IN: Stopping audio stream due to caller interruption');
+            mulawStream.destroy();
+
+            // Send clear command to Twilio to stop playback immediately
+            ws.send(JSON.stringify({
+              event: 'clear',
+              streamSid: streamSid
+            }));
+
+            resolve(); // Resolve (not reject) since this is intentional
+            return;
+          }
+
           // Convert chunk to base64
           const payload = chunk.toString('base64');
 
@@ -267,17 +287,30 @@ class AudioService {
 
       mulawStream.on('end', () => {
         const totalTime = Date.now() - startTime;
-        logger.info('Streaming audio complete', {
-          totalBytes: totalBytesSent,
-          totalTime,
-          estimatedDurationMs: (totalBytesSent / 8000) * 1000,
-        });
+
+        if (wasInterrupted) {
+          logger.info('Audio stream interrupted by caller', {
+            bytesSentBeforeInterrupt: totalBytesSent,
+            timeBeforeInterrupt: totalTime,
+          });
+        } else {
+          logger.info('Streaming audio complete', {
+            totalBytes: totalBytesSent,
+            totalTime,
+            estimatedDurationMs: (totalBytesSent / 8000) * 1000,
+          });
+        }
         resolve();
       });
 
       mulawStream.on('error', (error) => {
-        logger.error('Stream error', { error: error.message });
-        reject(error);
+        // Don't log as error if it was intentionally destroyed for barge-in
+        if (wasInterrupted) {
+          resolve();
+        } else {
+          logger.error('Stream error', { error: error.message });
+          reject(error);
+        }
       });
     });
   }

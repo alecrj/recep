@@ -175,6 +175,10 @@ router.ws('/stream', async (ws, req) => {
   let userSpeechBuffer = '';
   let isProcessing = false;
 
+  // BARGE-IN: Track if AI is speaking and if caller interrupts
+  let aiSpeakingSignal = { interrupted: false };
+  let isAISpeaking = false;
+
   logger.info('WebSocket stream connected');
 
   // Handle incoming WebSocket messages from Twilio
@@ -217,6 +221,18 @@ router.ws('/stream', async (ws, req) => {
           // Setup Deepgram handlers
           deepgramService.setupTranscriptionHandlers(deepgramConnection, {
             onTranscript: async ({ text, isFinal, speechFinal }) => {
+              // BARGE-IN: Detect caller speaking while AI is talking
+              if (!isFinal && isAISpeaking && text.trim().length > 0) {
+                logger.info('BARGE-IN DETECTED: Caller speaking while AI is talking', {
+                  interimText: text.substring(0, 30),
+                  callSid
+                });
+                // Signal to stop AI audio immediately
+                aiSpeakingSignal.interrupted = true;
+                isAISpeaking = false;
+                return;
+              }
+
               if (!isFinal) {
                 logger.debug('Interim transcript', { text: text.substring(0, 50) });
                 return;
@@ -227,18 +243,22 @@ router.ws('/stream', async (ws, req) => {
 
               if (speechFinal && !isProcessing) {
                 isProcessing = true;
-                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid);
+                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid, aiSpeakingSignal);
                 userSpeechBuffer = '';
                 isProcessing = false;
+                // Reset interrupt signal for next AI response
+                aiSpeakingSignal = { interrupted: false };
               }
             },
 
             onUtteranceEnd: async () => {
               if (userSpeechBuffer && !isProcessing) {
                 isProcessing = true;
-                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid);
+                await processUserSpeech(userSpeechBuffer.trim(), callData, ws, promptBuilder, streamSid, aiSpeakingSignal);
                 userSpeechBuffer = '';
                 isProcessing = false;
+                // Reset interrupt signal for next AI response
+                aiSpeakingSignal = { interrupted: false };
               }
             },
 
@@ -259,7 +279,9 @@ router.ws('/stream', async (ws, req) => {
               hasStreamSid: !!streamSid,
               callSid
             });
-            await sendAIResponse(greeting, callData, ws, streamSid);
+            isAISpeaking = true;
+            await sendAIResponse(greeting, callData, ws, streamSid, aiSpeakingSignal);
+            isAISpeaking = false;
             logger.info('Initial greeting sent successfully', { callSid });
           } catch (greetingError) {
             logger.error('CRITICAL: Failed to send initial greeting', {
@@ -268,6 +290,7 @@ router.ws('/stream', async (ws, req) => {
               callSid,
               streamSid
             });
+            isAISpeaking = false;
           }
           break;
 
