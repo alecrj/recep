@@ -12,7 +12,7 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
  */
 
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
-const VOICE = 'shimmer'; // shimmer = soft, warm, natural female voice
+const VOICE = 'nova'; // nova = higher-pitched, bright, energetic female voice - perfect for receptionist
 const TEMPERATURE = 1.0; // Maximum variation for unpredictable, human-like delivery
 
 const LOG_EVENT_TYPES = [
@@ -132,7 +132,7 @@ function handleRealtimeConnection(ws, businessId) {
       clearTimeout(interruptionTimeout);
     }
 
-    // Wait 800ms - if they're still talking, it's a real interruption
+    // Wait 1200ms - if they're still talking, it's a real interruption
     interruptionTimeout = setTimeout(() => {
       if (markQueue.length > 0 && responseStartTimestampTwilio != null) {
         const elapsedTime = latestMediaTimestamp - responseStartTimestampTwilio;
@@ -160,12 +160,12 @@ function handleRealtimeConnection(ws, businessId) {
         responseStartTimestampTwilio = null;
       }
       interruptionTimeout = null;
-    }, 800); // 800ms delay allows quick backchanneling without truncation
+    }, 1200); // 1200ms delay - more forgiving for "yeah"/"mhm" backchanneling
   };
 
   // Handle when caller stops speaking
   const handleSpeechStoppedEvent = () => {
-    // If speech was very short (< 800ms), it was likely backchanneling
+    // If speech was very short (< 1200ms), it was likely backchanneling
     // Cancel the interruption timeout
     if (interruptionTimeout) {
       clearTimeout(interruptionTimeout);
