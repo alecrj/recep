@@ -1,10 +1,14 @@
 import axios from 'axios';
 
+// Use environment variable or fallback to production URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://ai-receptionistbackend-production.up.railway.app/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Allow cookies for CORS
 });
 
 // Request interceptor to add auth token
