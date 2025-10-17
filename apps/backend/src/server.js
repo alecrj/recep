@@ -131,6 +131,10 @@ app.use('/api/twilio', twilioRoutes);
 const testAudioRoutes = require('./routes/test-audio');
 app.use('/api/test-audio', testAudioRoutes);
 
+// OpenAI Realtime API routes (NEW - voice-to-voice)
+const { router: realtimeRoutes } = require('./routes/realtime-call');
+app.use('/api', realtimeRoutes);
+
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
   res.json({
@@ -276,7 +280,17 @@ app.get('/api/diagnostic/elevenlabs', async (req, res) => {
 // ============================================
 // WEBSOCKET HANDLING
 // ============================================
-// WebSocket routes are handled by express-ws in the routes
+
+// OpenAI Realtime API WebSocket handler
+const { handleRealtimeConnection } = require('./websocket/realtime-handler');
+
+app.ws('/media-stream/:businessId', (ws, req) => {
+  const { businessId } = req.params;
+  logger.info('WebSocket connection for Realtime API', { businessId });
+  handleRealtimeConnection(ws, businessId);
+});
+
+// Legacy WebSocket routes are handled by express-ws in the routes
 // See routes/calls.js for the actual WebSocket implementation
 
 // ============================================
