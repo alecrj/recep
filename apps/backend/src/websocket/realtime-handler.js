@@ -155,8 +155,12 @@ function handleRealtimeConnection(ws, businessId) {
 
   // OpenAI WebSocket event handlers
   openAiWs.on('open', () => {
-    logger.info('Connected to OpenAI Realtime API', { businessId });
+    logger.info('✅ Connected to OpenAI Realtime API', { businessId });
     logger.info('OpenAI WebSocket URL', { url: OPENAI_REALTIME_URL });
+    logger.info('OpenAI API Key present?', {
+      hasKey: !!config.OPENAI_API_KEY,
+      keyStart: config.OPENAI_API_KEY?.substring(0, 10)
+    });
     setTimeout(initializeSession, 100);
   });
 
@@ -164,9 +168,11 @@ function handleRealtimeConnection(ws, businessId) {
     try {
       const response = JSON.parse(data);
 
-      if (LOG_EVENT_TYPES.includes(response.type)) {
-        logger.info(`OpenAI event: ${response.type}`, { businessId });
-      }
+      // Log ALL events for debugging
+      logger.info(`📥 OpenAI event: ${response.type}`, {
+        businessId,
+        event: response
+      });
 
       // Stream audio deltas back to Twilio
       if (response.type === 'response.audio.delta' && response.delta) {
@@ -208,11 +214,19 @@ function handleRealtimeConnection(ws, businessId) {
   });
 
   openAiWs.on('error', (error) => {
-    logger.error('OpenAI WebSocket error', { error: error.message });
+    logger.error('❌ OpenAI WebSocket error', {
+      error: error.message,
+      code: error.code,
+      stack: error.stack
+    });
   });
 
-  openAiWs.on('close', () => {
-    logger.info('Disconnected from OpenAI Realtime API', { businessId });
+  openAiWs.on('close', (code, reason) => {
+    logger.info('Disconnected from OpenAI Realtime API', {
+      businessId,
+      code,
+      reason: reason.toString()
+    });
   });
 
   // Handle incoming messages from Twilio
