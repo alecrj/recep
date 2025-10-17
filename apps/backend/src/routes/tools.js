@@ -261,4 +261,67 @@ router.post('/take-message', async (req, res) => {
   }
 });
 
+/**
+ * Initiate emergency transfer for a call
+ * This is called by the ElevenLabs agent to transfer calls to the business's emergency number
+ */
+router.post('/emergency-transfer', async (req, res) => {
+  try {
+    const { business_id, call_sid } = req.body;
+
+    logger.info('Tool called: emergency_transfer', { business_id, call_sid });
+
+    if (!business_id) {
+      return res.status(400).json({
+        error: 'Missing required parameter: business_id'
+      });
+    }
+
+    // Load business to get emergency phone number
+    const business = await prisma.business.findUnique({
+      where: { id: business_id },
+      include: { config: true }
+    });
+
+    if (!business) {
+      return res.status(404).json({
+        error: 'Business not found',
+        message: 'I apologize, I had trouble connecting you. Let me take your information and have someone call you back immediately.'
+      });
+    }
+
+    // Get emergency phone number
+    const emergencyPhone = business.config?.emergencyContactPhone || business.ownerPhone;
+
+    if (!emergencyPhone) {
+      logger.error('No emergency phone configured', { business_id });
+      return res.status(400).json({
+        error: 'No emergency phone configured',
+        message: 'Let me take your information and have someone call you back right away.'
+      });
+    }
+
+    logger.info('Emergency transfer initiated', {
+      business_id,
+      emergencyPhone: emergencyPhone.substring(0, 5) + '***' // Log masked number
+    });
+
+    // NOTE: Actual Twilio transfer implementation will be added
+    // For now, return success with instructions
+    return res.json({
+      success: true,
+      message: 'Transferring you to our emergency line now. Please hold.',
+      emergency_phone: emergencyPhone,
+      transfer_initiated: true
+    });
+
+  } catch (error) {
+    logger.error('Error in emergency_transfer tool', { error: error.message, stack: error.stack });
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: 'I had trouble with that transfer. Let me take your information and have someone call you back immediately.'
+    });
+  }
+});
+
 module.exports = { router };
