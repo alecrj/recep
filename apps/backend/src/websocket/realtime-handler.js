@@ -11,9 +11,9 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
  * This is where the magic happens - direct audio-to-audio conversation
  */
 
-const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01';
-const VOICE = 'alloy'; // Options: alloy, echo, shimmer
-const TEMPERATURE = 0.8; // Natural variation
+const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
+const VOICE = 'sage'; // sage = warm, empathetic female voice (newer, more expressive)
+const TEMPERATURE = 0.9; // Higher = more natural variation (0.8-1.0 recommended)
 
 const LOG_EVENT_TYPES = [
   'error',
@@ -76,11 +76,11 @@ function handleRealtimeConnection(ws, businessId) {
       const sessionUpdate = {
         type: 'session.update',
         session: {
-          modalities: ['text', 'audio'],
+          modalities: ['audio'], // Audio only - no text needed
           instructions,
           voice: VOICE,
-          input_audio_format: 'g711_ulaw', // Twilio uses μ-law
-          output_audio_format: 'g711_ulaw',
+          input_audio_format: 'pcmu', // Correct format for Twilio (not g711_ulaw)
+          output_audio_format: 'pcmu',
           input_audio_transcription: {
             model: 'whisper-1',
           },
@@ -89,6 +89,7 @@ function handleRealtimeConnection(ws, businessId) {
             threshold: 0.5,
             prefix_padding_ms: 300,
             silence_duration_ms: 500,
+            create_response: true, // CRITICAL - auto-respond when user stops talking
           },
           temperature: TEMPERATURE,
         },
