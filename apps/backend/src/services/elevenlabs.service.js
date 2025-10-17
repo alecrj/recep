@@ -80,15 +80,15 @@ class ElevenLabsService {
       `${this.baseUrl}/text-to-speech/${voiceId}/stream`,
       {
         text,
-        model_id: 'eleven_flash_v2_5',  // Fastest model for real-time conversations
+        model_id: 'eleven_turbo_v2_5',  // Best quality for natural speech
         voice_settings: {
-          stability: 0.35,           // Low = highly expressive, natural variation (like real humans)
-          similarity_boost: 0.75,    // Maintain voice character consistency
-          style: 0.65,               // High = very expressive, emotional, reacts naturally
-          use_speaker_boost: true,   // Enhances clarity for phone calls
+          stability: 0.20,           // VERY LOW = maximum expressiveness, sighs, natural pauses
+          similarity_boost: 0.85,    // HIGH = maintain voice character strongly
+          style: 0.80,               // VERY HIGH = maximum emotion, laughs, reacts, human-like
+          use_speaker_boost: true,   // Phone clarity
         },
-        optimize_streaming_latency: 4, // Max speed = 4 (start sending ASAP)
-        output_format: 'mp3_44100_128', // MP3 format (proven to work)
+        optimize_streaming_latency: 4, // Max speed (start sending ASAP)
+        output_format: 'mp3_44100_128', // MP3 (proven to work)
       },
       {
         headers: {
