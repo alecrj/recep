@@ -7,7 +7,7 @@ const INDUSTRY_TEMPLATES = {
   hvac: {
     name: 'HVAC',
     displayName: 'HVAC & Air Conditioning',
-    greetingMessage: 'Thank you for calling {businessName}. How can I help you with your heating, cooling, or air quality needs today?',
+    greetingMessage: 'Thanks for calling {businessName}, how can we help?',
     services: [
       {
         name: 'AC Repair',
@@ -102,7 +102,7 @@ const INDUSTRY_TEMPLATES = {
   plumbing: {
     name: 'plumbing',
     displayName: 'Plumbing Services',
-    greetingMessage: 'Thank you for calling {businessName}. How can I help you with your plumbing needs today?',
+    greetingMessage: 'Thanks for calling {businessName}, how can we help?',
     services: [
       {
         name: 'Drain Cleaning',
@@ -168,7 +168,7 @@ const INDUSTRY_TEMPLATES = {
   electrical: {
     name: 'electrical',
     displayName: 'Electrical Services',
-    greetingMessage: 'Thank you for calling {businessName}. How can I help you with your electrical needs today?',
+    greetingMessage: 'Thanks for calling {businessName}, how can we help?',
     services: [
       {
         name: 'Electrical Repair',
@@ -217,7 +217,7 @@ const INDUSTRY_TEMPLATES = {
   general: {
     name: 'general',
     displayName: 'General Service Business',
-    greetingMessage: 'Thank you for calling {businessName}. How can I help you today?',
+    greetingMessage: 'Thanks for calling {businessName}, how can we help?',
     services: [
       {
         name: 'Standard Service',
