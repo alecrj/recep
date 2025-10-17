@@ -41,7 +41,6 @@ router.post('/realtime/incoming', async (req, res) => {
         toNumber: To,
         callSid: CallSid,
         startedAt: new Date(),
-        intent: 'INCOMING',
       },
     });
 
