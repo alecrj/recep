@@ -11,26 +11,34 @@ const { prisma } = require('@ai-receptionist/database');
  */
 
 /**
- * Get signed URL from ElevenLabs for authenticated conversation
+ * Get signed URL from ElevenLabs for authenticated conversation with dynamic variables
  */
-async function getSignedUrl(agentId) {
+async function getSignedUrl(agentId, dynamicVariables = {}) {
   try {
     const response = await fetch(
       `https://api.elevenlabs.io/v1/convai/conversation/get_signed_url?agent_id=${agentId}`,
       {
-        method: 'GET',
+        method: 'POST',
         headers: {
-          'xi-api-key': config.ELEVENLABS_API_KEY
-        }
+          'xi-api-key': config.ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          dynamic_variables: dynamicVariables
+        })
       }
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get signed URL: ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`Failed to get signed URL: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
-    logger.info('ElevenLabs signed URL obtained', { agentId });
+    logger.info('ElevenLabs signed URL obtained with dynamic variables', {
+      agentId,
+      variables: Object.keys(dynamicVariables)
+    });
     return data.signed_url;
   } catch (error) {
     logger.error('Error getting ElevenLabs signed URL', { error: error.message });
@@ -123,8 +131,22 @@ function handleElevenLabsConnection(ws, businessId) {
 
       logger.info('Initializing ElevenLabs conversation', { businessId, agentId });
 
-      // Get signed URL for authenticated connection
-      const signedUrl = await getSignedUrl(agentId);
+      // Prepare dynamic variables for this business
+      const dynamicVariables = {
+        business_name: business.name || 'our company',
+        greeting: businessConfig.greetingMessage || `Thanks for calling ${business.name}! How can I help you today?`,
+        services: businessConfig.services ? businessConfig.services.join(', ') : 'HVAC services',
+        hours: businessConfig.businessHours || 'Monday-Friday 8am-6pm',
+        service_area: businessConfig.serviceArea || 'our local area',
+        emergency_phone: businessConfig.emergencyContactPhone || business.ownerPhone || '+15555555555',
+        owner_name: business.ownerName || 'the owner',
+        business_id: business.id
+      };
+
+      logger.info('Dynamic variables prepared', { businessId, dynamicVariables });
+
+      // Get signed URL for authenticated connection with dynamic variables
+      const signedUrl = await getSignedUrl(agentId, dynamicVariables);
 
       // Connect to ElevenLabs Conversational AI
       elevenLabsWs = new WebSocket(signedUrl);

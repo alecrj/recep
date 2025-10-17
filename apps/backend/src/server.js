@@ -139,6 +139,10 @@ app.use('/api', realtimeRoutes);
 const { router: elevenLabsRoutes } = require('./routes/elevenlabs-call');
 app.use('/api', elevenLabsRoutes);
 
+// Tool webhook routes (called by ElevenLabs agent)
+const { router: toolRoutes } = require('./routes/tools');
+app.use('/api/tools', toolRoutes);
+
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
   res.json({
