@@ -105,12 +105,29 @@ function handleRealtimeConnection(ws, businessId) {
       openAiWs.send(JSON.stringify(sessionUpdate));
       logger.info('Session update sent successfully', { businessId });
 
-      // Send initial greeting immediately (don't wait for user to speak)
+      // Send initial greeting with specific instruction
       setTimeout(() => {
+        // Add a conversation item that prompts a simple greeting
+        const greetingPrompt = {
+          type: 'conversation.item.create',
+          item: {
+            type: 'message',
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: '[Call just connected - greet the caller naturally with a simple "Hello" or "Hi there"]'
+              }
+            ]
+          }
+        };
+
         const greetingEvent = {
           type: 'response.create',
         };
+
         logger.info('Triggering AI greeting', { businessId });
+        openAiWs.send(JSON.stringify(greetingPrompt));
         openAiWs.send(JSON.stringify(greetingEvent));
       }, 250); // Small delay to ensure session is fully initialized
     } catch (error) {
