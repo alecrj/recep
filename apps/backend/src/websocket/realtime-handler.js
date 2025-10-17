@@ -76,10 +76,10 @@ function handleRealtimeConnection(ws, businessId) {
       const sessionUpdate = {
         type: 'session.update',
         session: {
-          modalities: ['audio'], // Audio only - no text needed
+          modalities: ['audio', 'text'], // MUST include both - OpenAI requirement
           instructions,
           voice: VOICE,
-          input_audio_format: 'pcmu', // Correct format for Twilio (not g711_ulaw)
+          input_audio_format: 'pcmu', // Correct format for Twilio
           output_audio_format: 'pcmu',
           input_audio_transcription: {
             model: 'whisper-1',
