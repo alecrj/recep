@@ -24,6 +24,7 @@ module.exports = {
   DEEPGRAM_API_KEY: process.env.DEEPGRAM_API_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
   ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
+  ELEVENLABS_AGENT_ID: process.env.ELEVENLABS_AGENT_ID,
 
   // Google
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,

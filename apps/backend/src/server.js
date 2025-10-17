@@ -135,6 +135,10 @@ app.use('/api/test-audio', testAudioRoutes);
 const { router: realtimeRoutes } = require('./routes/realtime-call');
 app.use('/api', realtimeRoutes);
 
+// ElevenLabs Conversational AI routes (THE BEST - human-like voice)
+const { router: elevenLabsRoutes } = require('./routes/elevenlabs-call');
+app.use('/api', elevenLabsRoutes);
+
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
   res.json({
@@ -288,6 +292,15 @@ app.ws('/media-stream/:businessId', (ws, req) => {
   const { businessId } = req.params;
   logger.info('WebSocket connection for Realtime API', { businessId });
   handleRealtimeConnection(ws, businessId);
+});
+
+// ElevenLabs Conversational AI WebSocket handler (THE BEST)
+const { handleElevenLabsConnection } = require('./websocket/elevenlabs-handler');
+
+app.ws('/elevenlabs-stream/:businessId', (ws, req) => {
+  const { businessId } = req.params;
+  logger.info('WebSocket connection for ElevenLabs Conversational AI', { businessId });
+  handleElevenLabsConnection(ws, businessId);
 });
 
 // Legacy WebSocket routes are handled by express-ws in the routes
