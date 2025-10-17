@@ -12,8 +12,8 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
  */
 
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
-const VOICE = 'sage'; // sage = warm, empathetic female voice (newer, more expressive)
-const TEMPERATURE = 0.9; // Higher = more natural variation (0.8-1.0 recommended)
+const VOICE = 'coral'; // coral = natural, warm, conversational (most expressive 2025 voice)
+const TEMPERATURE = 0.8; // Sweet spot for natural but predictable conversation
 
 const LOG_EVENT_TYPES = [
   'error',
@@ -88,7 +88,7 @@ function handleRealtimeConnection(ws, businessId) {
             type: 'server_vad', // Server-side Voice Activity Detection
             threshold: 0.5, // Sensitivity (0.0-1.0, lower = more sensitive)
             prefix_padding_ms: 300, // Include 300ms before speech starts
-            silence_duration_ms: 200, // Respond after only 200ms silence (faster, more natural)
+            silence_duration_ms: 600, // Human-like pause - wait 600ms before responding
             create_response: true, // CRITICAL - auto-respond when user stops talking
           },
           temperature: TEMPERATURE,
