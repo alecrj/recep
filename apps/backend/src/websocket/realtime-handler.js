@@ -86,9 +86,9 @@ function handleRealtimeConnection(ws, businessId) {
           },
           turn_detection: {
             type: 'server_vad', // Server-side Voice Activity Detection
-            threshold: 0.5, // Sensitivity (0.0-1.0, lower = more sensitive)
-            prefix_padding_ms: 300, // Include 300ms before speech starts
-            silence_duration_ms: 600, // Human-like pause - wait 600ms before responding
+            threshold: 0.3, // Lower = more sensitive, allows natural overlaps
+            prefix_padding_ms: 200, // Shorter padding for quicker response
+            silence_duration_ms: 400, // Balanced - not too fast, not too slow
             create_response: true, // CRITICAL - auto-respond when user stops talking
           },
           temperature: TEMPERATURE,
