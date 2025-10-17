@@ -12,8 +12,8 @@ const { buildRealtimeInstructions } = require('../routes/realtime-call');
  */
 
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime';
-const VOICE = 'verse'; // verse = most natural, expressive 2025 voice (try also: ballad, ash)
-const TEMPERATURE = 0.8; // Sweet spot for natural but predictable conversation
+const VOICE = 'shimmer'; // shimmer = soft, warm, natural female voice
+const TEMPERATURE = 0.9; // Higher for more natural variation and less robotic
 
 const LOG_EVENT_TYPES = [
   'error',
