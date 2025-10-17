@@ -38,6 +38,8 @@ function handleRealtimeConnection(ws, businessId) {
   let markQueue = [];
   let responseStartTimestampTwilio = null;
   let businessConfig = null;
+  let speechStartedTimestamp = null; // Track when user speech started
+  let interruptionTimeout = null; // Delay before truncating
 
   // Create WebSocket connection to OpenAI
   const openAiWs = new WebSocket(OPENAI_REALTIME_URL, {
@@ -122,31 +124,55 @@ function handleRealtimeConnection(ws, businessId) {
 
   // Handle interruption when caller starts speaking
   const handleSpeechStartedEvent = () => {
-    if (markQueue.length > 0 && responseStartTimestampTwilio != null) {
-      const elapsedTime = latestMediaTimestamp - responseStartTimestampTwilio;
+    speechStartedTimestamp = Date.now();
 
-      if (lastAssistantItem) {
-        const truncateEvent = {
-          type: 'conversation.item.truncate',
-          item_id: lastAssistantItem,
-          content_index: 0,
-          audio_end_ms: elapsedTime,
-        };
-        logger.info('Truncating AI response (barge-in)', { elapsedTime });
-        openAiWs.send(JSON.stringify(truncateEvent));
-      }
-
-      // Clear Twilio's audio buffer
-      ws.send(JSON.stringify({
-        event: 'clear',
-        streamSid: streamSid,
-      }));
-
-      // Reset
-      markQueue = [];
-      lastAssistantItem = null;
-      responseStartTimestampTwilio = null;
+    // Don't immediately truncate - wait to see if this is real interruption
+    // or just backchanneling like "yeah", "mm-hmm"
+    if (interruptionTimeout) {
+      clearTimeout(interruptionTimeout);
     }
+
+    // Wait 800ms - if they're still talking, it's a real interruption
+    interruptionTimeout = setTimeout(() => {
+      if (markQueue.length > 0 && responseStartTimestampTwilio != null) {
+        const elapsedTime = latestMediaTimestamp - responseStartTimestampTwilio;
+
+        if (lastAssistantItem) {
+          const truncateEvent = {
+            type: 'conversation.item.truncate',
+            item_id: lastAssistantItem,
+            content_index: 0,
+            audio_end_ms: elapsedTime,
+          };
+          logger.info('Truncating AI response (real interruption)', { elapsedTime });
+          openAiWs.send(JSON.stringify(truncateEvent));
+        }
+
+        // Clear Twilio's audio buffer
+        ws.send(JSON.stringify({
+          event: 'clear',
+          streamSid: streamSid,
+        }));
+
+        // Reset
+        markQueue = [];
+        lastAssistantItem = null;
+        responseStartTimestampTwilio = null;
+      }
+      interruptionTimeout = null;
+    }, 800); // 800ms delay allows quick backchanneling without truncation
+  };
+
+  // Handle when caller stops speaking
+  const handleSpeechStoppedEvent = () => {
+    // If speech was very short (< 800ms), it was likely backchanneling
+    // Cancel the interruption timeout
+    if (interruptionTimeout) {
+      clearTimeout(interruptionTimeout);
+      interruptionTimeout = null;
+      logger.info('Short speech detected (backchanneling) - AI continues');
+    }
+    speechStartedTimestamp = null;
   };
 
   // Send mark messages to track when AI response playback finishes
@@ -204,9 +230,14 @@ function handleRealtimeConnection(ws, businessId) {
         sendMark(streamSid);
       }
 
-      // Handle speech started (barge-in)
+      // Handle speech started (potential barge-in)
       if (response.type === 'input_audio_buffer.speech_started') {
         handleSpeechStartedEvent();
+      }
+
+      // Handle speech stopped (check if backchanneling)
+      if (response.type === 'input_audio_buffer.speech_stopped') {
+        handleSpeechStoppedEvent();
       }
 
       // Log function calls
