@@ -33,9 +33,14 @@ router.post('/realtime/incoming', async (req, res) => {
       return res.status(404).send('Business not found');
     }
 
-    // Create call record
-    await prisma.call.create({
-      data: {
+    // Create call record (or update if duplicate CallSid from Twilio retry)
+    await prisma.call.upsert({
+      where: { callSid: CallSid },
+      update: {
+        // If call already exists, just update timestamp (Twilio retries)
+        startedAt: new Date(),
+      },
+      create: {
         businessId: business.id,
         fromNumber: From,
         toNumber: To,

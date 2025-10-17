@@ -79,16 +79,16 @@ function handleRealtimeConnection(ws, businessId) {
           modalities: ['audio', 'text'], // MUST include both - OpenAI requirement
           instructions,
           voice: VOICE,
-          input_audio_format: 'pcmu', // Correct format for Twilio
-          output_audio_format: 'pcmu',
+          input_audio_format: 'g711_ulaw', // Correct format for Twilio
+          output_audio_format: 'g711_ulaw',
           input_audio_transcription: {
             model: 'whisper-1',
           },
           turn_detection: {
             type: 'server_vad', // Server-side Voice Activity Detection
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 500,
+            threshold: 0.5, // Sensitivity (0.0-1.0, lower = more sensitive)
+            prefix_padding_ms: 300, // Include 300ms before speech starts
+            silence_duration_ms: 200, // Respond after only 200ms silence (faster, more natural)
             create_response: true, // CRITICAL - auto-respond when user stops talking
           },
           temperature: TEMPERATURE,
@@ -102,6 +102,15 @@ function handleRealtimeConnection(ws, businessId) {
       });
       openAiWs.send(JSON.stringify(sessionUpdate));
       logger.info('Session update sent successfully', { businessId });
+
+      // Send initial greeting immediately (don't wait for user to speak)
+      setTimeout(() => {
+        const greetingEvent = {
+          type: 'response.create',
+        };
+        logger.info('Triggering AI greeting', { businessId });
+        openAiWs.send(JSON.stringify(greetingEvent));
+      }, 250); // Small delay to ensure session is fully initialized
     } catch (error) {
       logger.error('Error initializing session', {
         businessId,
@@ -179,7 +188,7 @@ function handleRealtimeConnection(ws, businessId) {
         const audioDelta = {
           event: 'media',
           streamSid: streamSid,
-          media: { payload: Buffer.from(response.delta, 'base64').toString('base64') },
+          media: { payload: response.delta }, // Already base64 encoded from OpenAI
         };
         ws.send(JSON.stringify(audioDelta));
 
