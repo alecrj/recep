@@ -82,10 +82,13 @@ export default function Login() {
         </form>
 
         <div className="mt-6 pt-6 border-t border-zinc-800">
-          <p className="text-sm text-zinc-400 text-center">
-            Demo credentials:<br />
-            <span className="font-mono text-xs text-zinc-500">demo@testbusiness.com</span>
-          </p>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+            <p className="text-xs font-medium text-zinc-400 mb-2 text-center">🧪 Demo Credentials</p>
+            <div className="space-y-1 text-center">
+              <p className="text-sm font-mono text-green-400">bob@bobshvac.com</p>
+              <p className="text-sm font-mono text-green-400">test123</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

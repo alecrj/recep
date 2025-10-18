@@ -87,10 +87,14 @@ export default function AdminLogin() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-zinc-800 text-center">
-          <p className="text-xs text-zinc-500">
-            Authorized Personnel Only
-          </p>
+        <div className="mt-6 pt-6 border-t border-zinc-800">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+            <p className="text-xs font-medium text-zinc-400 mb-2 text-center">🔐 Admin Credentials</p>
+            <div className="space-y-1 text-center">
+              <p className="text-sm font-mono text-purple-400">admin@voxi.ai</p>
+              <p className="text-sm font-mono text-purple-400">admin123</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
