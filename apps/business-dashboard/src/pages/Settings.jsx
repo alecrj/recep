@@ -14,6 +14,7 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('general');
   const [saved, setSaved] = useState(false);
+  const [calendarConnecting, setCalendarConnecting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['config'],
@@ -49,6 +50,35 @@ export default function Settings() {
       phoneNumber: formData.get('phoneNumber'),
     };
     mutation.mutate(config);
+  };
+
+  const handleConnectCalendar = async () => {
+    try {
+      setCalendarConnecting(true);
+      const response = await api.get('/calendar/auth-url');
+      // Open Google OAuth in new window
+      window.location.href = response.data.authUrl;
+    } catch (error) {
+      console.error('Failed to connect calendar:', error);
+      alert('Failed to connect Google Calendar. Please try again.');
+    } finally {
+      setCalendarConnecting(false);
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    if (!confirm('Are you sure you want to disconnect Google Calendar?')) {
+      return;
+    }
+
+    try {
+      await api.post('/calendar/disconnect');
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+      alert('Google Calendar disconnected successfully');
+    } catch (error) {
+      console.error('Failed to disconnect calendar:', error);
+      alert('Failed to disconnect calendar. Please try again.');
+    }
   };
 
   if (isLoading) {
@@ -262,6 +292,7 @@ export default function Settings() {
                     </div>
                     <button
                       type="button"
+                      onClick={handleDisconnectCalendar}
                       className="px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-900/20 rounded-lg transition-colors"
                     >
                       Disconnect
@@ -274,8 +305,13 @@ export default function Settings() {
                     <p className="text-sm text-zinc-400 mb-4">
                       Automatically sync appointments with your Google Calendar
                     </p>
-                    <button type="button" className="btn-primary">
-                      Connect Google Calendar
+                    <button
+                      type="button"
+                      onClick={handleConnectCalendar}
+                      disabled={calendarConnecting}
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {calendarConnecting ? 'Connecting...' : 'Connect Google Calendar'}
                     </button>
                   </div>
                 )}

@@ -143,6 +143,10 @@ app.use('/api', elevenLabsRoutes);
 const { router: toolRoutes } = require('./routes/tools');
 app.use('/api/tools', toolRoutes);
 
+// Google Calendar integration routes
+const { router: calendarRoutes } = require('./routes/calendar');
+app.use('/api', calendarRoutes);
+
 // Placeholder routes for now
 app.get('/api/test', (req, res) => {
   res.json({

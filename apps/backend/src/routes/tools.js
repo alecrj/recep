@@ -1,6 +1,7 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const { prisma } = require('@ai-receptionist/database');
+const { createCalendarEvent } = require('../services/google-calendar');
 
 const router = express.Router();
 
@@ -156,8 +157,15 @@ router.post('/book-appointment', async (req, res) => {
       service_type
     });
 
+    // Add to Google Calendar (non-blocking)
+    createCalendarEvent(business_id, appointment).catch(err => {
+      logger.error('Failed to create calendar event', {
+        appointmentId: appointment.id,
+        error: err.message
+      });
+    });
+
     // TODO: Send SMS confirmation via Twilio
-    // TODO: Add to Google Calendar
 
     return res.json({
       success: true,
