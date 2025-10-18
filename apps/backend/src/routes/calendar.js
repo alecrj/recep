@@ -1,26 +1,24 @@
 const express = require('express');
 const logger = require('../utils/logger');
-const {
-  getAuthUrl,
-  connectCalendar,
-  disconnectCalendar,
-  syncEventsFromCalendar
-} = require('../services/google-calendar');
-const { verifyBusinessToken } = require('../middleware/auth');
+const calendarService = require('../services/calendar.service');
+const authMiddleware = require('../middleware/auth.middleware');
 
 const router = express.Router();
 
 /**
  * Google Calendar Integration Routes
+ * Used by business owners to connect their Google Calendar
  */
 
 /**
  * Get OAuth authorization URL
  * Business owner clicks "Connect Google Calendar" in settings
  */
-router.get('/calendar/auth-url', verifyBusinessToken, (req, res) => {
+router.get('/calendar/auth-url', authMiddleware.requireBusiness, (req, res) => {
   try {
-    const authUrl = getAuthUrl();
+    const authUrl = calendarService.getAuthorizationUrl(req.user.id);
+
+    logger.info('Calendar auth URL generated', { businessId: req.user.id });
 
     res.json({
       success: true,
@@ -31,42 +29,69 @@ router.get('/calendar/auth-url', verifyBusinessToken, (req, res) => {
       businessId: req.user.id,
       error: error.message
     });
-    res.status(500).json({ error: 'Failed to generate authorization URL' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate authorization URL'
+    });
   }
 });
 
 /**
  * OAuth callback - Exchange code for tokens
+ * Google redirects here after user authorizes
  */
-router.get('/calendar/callback', verifyBusinessToken, async (req, res) => {
-  const { code } = req.query;
+router.get('/calendar/oauth/callback', async (req, res) => {
+  const { code, state } = req.query;
 
-  if (!code) {
-    return res.status(400).json({ error: 'Authorization code required' });
+  if (!code || !state) {
+    return res.status(400).send('Missing authorization code or business ID');
   }
 
   try {
-    await connectCalendar(req.user.id, code);
+    // state contains the businessId
+    await calendarService.handleOAuthCallback(code, state);
 
-    res.json({
-      success: true,
-      message: 'Google Calendar connected successfully'
-    });
+    logger.info('Calendar connected successfully', { businessId: state });
+
+    // Redirect to dashboard with success message
+    res.send(`
+      <html>
+        <body>
+          <h1>Calendar Connected!</h1>
+          <p>Your Google Calendar has been connected successfully.</p>
+          <script>
+            window.opener.postMessage({ type: 'calendar_connected' }, '*');
+            setTimeout(() => window.close(), 2000);
+          </script>
+        </body>
+      </html>
+    `);
   } catch (error) {
-    logger.error('Error connecting calendar', {
-      businessId: req.user.id,
-      error: error.message
+    logger.error('Error in OAuth callback', {
+      error: error.message,
+      state
     });
-    res.status(500).json({ error: 'Failed to connect calendar' });
+    res.status(500).send('Failed to connect calendar. Please try again.');
   }
 });
 
 /**
  * Disconnect Google Calendar
  */
-router.post('/calendar/disconnect', verifyBusinessToken, async (req, res) => {
+router.post('/calendar/disconnect', authMiddleware.requireBusiness, async (req, res) => {
   try {
-    await disconnectCalendar(req.user.id);
+    const { prisma } = require('@ai-receptionist/database');
+
+    await prisma.businessConfig.update({
+      where: { businessId: req.user.id },
+      data: {
+        googleCalendarAccessToken: null,
+        googleCalendarRefreshToken: null,
+        googleCalendarTokenExpiry: null
+      }
+    });
+
+    logger.info('Calendar disconnected', { businessId: req.user.id });
 
     res.json({
       success: true,
@@ -77,31 +102,38 @@ router.post('/calendar/disconnect', verifyBusinessToken, async (req, res) => {
       businessId: req.user.id,
       error: error.message
     });
-    res.status(500).json({ error: 'Failed to disconnect calendar' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to disconnect calendar'
+    });
   }
 });
 
 /**
- * Manually trigger calendar sync
+ * Get upcoming appointments from Google Calendar
  */
-router.post('/calendar/sync', verifyBusinessToken, async (req, res) => {
+router.get('/calendar/upcoming', authMiddleware.requireBusiness, async (req, res) => {
   try {
-    const result = await syncEventsFromCalendar(req.user.id);
+    const { days = 7 } = req.query;
 
-    if (!result.success) {
-      return res.status(400).json({ error: result.error });
-    }
+    const appointments = await calendarService.getUpcomingAppointments(
+      req.user.id,
+      parseInt(days)
+    );
 
     res.json({
       success: true,
-      syncedCount: result.syncedCount
+      appointments
     });
   } catch (error) {
-    logger.error('Error syncing calendar', {
+    logger.error('Error fetching upcoming appointments', {
       businessId: req.user.id,
       error: error.message
     });
-    res.status(500).json({ error: 'Failed to sync calendar' });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch upcoming appointments'
+    });
   }
 });
 

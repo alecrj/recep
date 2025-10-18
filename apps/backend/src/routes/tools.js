@@ -1,7 +1,8 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const { prisma } = require('@ai-receptionist/database');
-const { createCalendarEvent } = require('../services/google-calendar');
+const calendarService = require('../services/calendar.service');
+const twilioService = require('../services/twilio.service');
 
 const router = express.Router();
 
@@ -39,25 +40,51 @@ router.post('/check-availability', async (req, res) => {
       });
     }
 
-    // TODO: Integrate with Google Calendar API
-    // For now, return mock available slots
-    const availableSlots = [
-      '09:00 AM',
-      '10:00 AM',
-      '11:00 AM',
-      '01:00 PM',
-      '02:00 PM',
-      '03:00 PM',
-      '04:00 PM'
-    ];
+    // Parse the date and get start/end of day
+    const requestedDate = new Date(date);
+    const startDate = new Date(requestedDate);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(requestedDate);
+    endDate.setHours(23, 59, 59, 999);
 
-    logger.info('Available slots returned', { business_id, date, count: availableSlots.length });
+    // Check availability using calendar service
+    const availableSlots = await calendarService.checkAvailability(
+      business_id,
+      startDate,
+      endDate
+    );
+
+    // Format slots for AI response (convert to readable times)
+    const formattedSlots = availableSlots.slice(0, 8).map(slot => {
+      const time = new Date(slot.start);
+      return time.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    });
+
+    logger.info('Available slots returned', {
+      business_id,
+      date,
+      count: formattedSlots.length,
+      hasGoogleCalendar: !!business.config?.googleCalendarAccessToken
+    });
+
+    if (formattedSlots.length === 0) {
+      return res.json({
+        success: true,
+        date: date,
+        available_slots: [],
+        message: `I'm sorry, we're fully booked on ${date}. Would you like to check another day?`
+      });
+    }
 
     return res.json({
       success: true,
       date: date,
-      available_slots: availableSlots,
-      message: `We have availability on ${date} at: ${availableSlots.join(', ')}`
+      available_slots: formattedSlots,
+      message: `We have availability on ${date} at: ${formattedSlots.join(', ')}`
     });
 
   } catch (error) {
@@ -133,19 +160,43 @@ router.post('/book-appointment', async (req, res) => {
 
     // Parse date and time into scheduledTime datetime
     const scheduledTime = new Date(`${date}T${time}`);
+    const durationMinutes = business.config?.appointmentDuration || 60;
 
-    // Create appointment
+    // Book appointment in Google Calendar (or database if not connected)
+    let calendarEventId = null;
+    try {
+      const calendarResult = await calendarService.bookAppointment(business_id, {
+        customerName: customer_name,
+        customerEmail: null, // Could be collected by AI
+        customerPhone: customer_phone,
+        scheduledTime: scheduledTime,
+        durationMinutes: durationMinutes,
+        serviceType: service_type,
+        notes: 'Booked via AI receptionist'
+      });
+      calendarEventId = calendarResult.calendarEventId;
+      logger.info('Appointment added to calendar', { calendarEventId, business_id });
+    } catch (calendarError) {
+      logger.error('Failed to add to calendar, proceeding with DB only', {
+        error: calendarError.message,
+        business_id
+      });
+    }
+
+    // Create appointment in database
     const appointment = await prisma.appointment.create({
       data: {
         businessId: business_id,
         customerId: customer.id,
         scheduledTime: scheduledTime,
-        durationMinutes: business.config?.appointmentDuration || 60,
+        durationMinutes: durationMinutes,
         serviceType: service_type,
         customerName: customer_name,
         customerPhone: customer_phone,
         status: 'SCHEDULED',
-        notes: `Booked via AI receptionist`
+        notes: 'Booked via AI receptionist',
+        calendarEventId: calendarEventId,
+        createdBy: 'ai'
       }
     });
 
@@ -154,18 +205,34 @@ router.post('/book-appointment', async (req, res) => {
       customer_name,
       date,
       time,
-      service_type
+      service_type,
+      hasCalendarEvent: !!calendarEventId
     });
 
-    // Add to Google Calendar (non-blocking)
-    createCalendarEvent(business_id, appointment).catch(err => {
-      logger.error('Failed to create calendar event', {
-        appointmentId: appointment.id,
-        error: err.message
+    // Send SMS confirmation
+    try {
+      await twilioService.sendAppointmentConfirmation(customer_phone, {
+        businessName: business.name,
+        date: new Date(scheduledTime).toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric'
+        }),
+        time: new Date(scheduledTime).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
+        service: service_type
       });
-    });
-
-    // TODO: Send SMS confirmation via Twilio
+      logger.info('SMS confirmation sent', { customer_phone, appointmentId: appointment.id });
+    } catch (smsError) {
+      logger.error('Failed to send SMS confirmation', {
+        error: smsError.message,
+        appointmentId: appointment.id
+      });
+      // Don't fail the booking if SMS fails
+    }
 
     return res.json({
       success: true,
