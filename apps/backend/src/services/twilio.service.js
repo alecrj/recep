@@ -390,11 +390,11 @@ This link expires in 24 hours.`;
     try {
       const purchasedNumber = await this.client.incomingPhoneNumbers.create({
         phoneNumber: phoneNumber,
-        voiceUrl: `${config.BASE_URL}/api/twilio/voice`,
+        voiceUrl: `${config.BACKEND_URL}/api/twilio/voice`,
         voiceMethod: 'POST',
-        statusCallback: `${config.BASE_URL}/api/twilio/status`,
+        statusCallback: `${config.BACKEND_URL}/api/twilio/status`,
         statusCallbackMethod: 'POST',
-        smsUrl: `${config.BASE_URL}/api/twilio/sms`,
+        smsUrl: `${config.BACKEND_URL}/api/twilio/sms`,
         smsMethod: 'POST',
       });
 
@@ -419,6 +419,44 @@ This link expires in 24 hours.`;
   }
 
   /**
+   * Configure webhook URLs for a phone number (includes business ID in webhook)
+   */
+  async configureNumberWebhooks(phoneNumberSid, businessId) {
+    if (this.testMode) {
+      logger.info('[TEST MODE] Would configure phone number webhooks', {
+        phoneNumberSid,
+        businessId,
+      });
+      return { testMode: true };
+    }
+
+    try {
+      const updated = await this.client.incomingPhoneNumbers(phoneNumberSid).update({
+        voiceUrl: `${config.BACKEND_URL}/api/twilio/voice?businessId=${businessId}`,
+        voiceMethod: 'POST',
+        statusCallback: `${config.BACKEND_URL}/api/twilio/status?businessId=${businessId}`,
+        statusCallbackMethod: 'POST',
+        smsUrl: `${config.BACKEND_URL}/api/twilio/sms?businessId=${businessId}`,
+        smsMethod: 'POST',
+      });
+
+      logger.info('Phone number webhooks configured for business', {
+        sid: phoneNumberSid,
+        businessId,
+      });
+
+      return updated;
+    } catch (error) {
+      logger.error('Failed to configure phone number webhooks', {
+        error: error.message,
+        phoneNumberSid,
+        businessId,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Update phone number webhook URLs
    */
   async updatePhoneNumberWebhooks(phoneNumberSid, webhookUrls) {
@@ -432,11 +470,11 @@ This link expires in 24 hours.`;
 
     try {
       const updated = await this.client.incomingPhoneNumbers(phoneNumberSid).update({
-        voiceUrl: webhookUrls.voiceUrl || `${config.BASE_URL}/api/twilio/voice`,
+        voiceUrl: webhookUrls.voiceUrl || `${config.BACKEND_URL}/api/twilio/voice`,
         voiceMethod: 'POST',
-        statusCallback: webhookUrls.statusCallback || `${config.BASE_URL}/api/twilio/status`,
+        statusCallback: webhookUrls.statusCallback || `${config.BACKEND_URL}/api/twilio/status`,
         statusCallbackMethod: 'POST',
-        smsUrl: webhookUrls.smsUrl || `${config.BASE_URL}/api/twilio/sms`,
+        smsUrl: webhookUrls.smsUrl || `${config.BACKEND_URL}/api/twilio/sms`,
         smsMethod: 'POST',
       });
 

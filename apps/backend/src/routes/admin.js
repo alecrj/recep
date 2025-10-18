@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 const bcrypt = require('bcrypt');
 const twilioService = require('../services/twilio.service');
 const calendarService = require('../services/calendar.service');
+const costCalculator = require('../services/cost-calculator');
 
 const router = express.Router();
 
@@ -96,9 +97,55 @@ router.get('/dashboard', async (req, res) => {
       }),
     ]);
 
-    // Calculate MRR (assuming $99/mo per active business - adjust as needed)
-    const mrr = activeBusinesses * 99;
+    // Calculate MRR based on actual plans
+    const businessPlans = await prisma.business.groupBy({
+      by: ['plan', 'status'],
+      where: {
+        status: { in: ['ACTIVE', 'TRIAL'] }
+      },
+      _count: true
+    });
+
+    const PLAN_PRICES = {
+      STARTER: 299,
+      PROFESSIONAL: 799,
+      ENTERPRISE: 1499
+    };
+
+    let mrr = 0;
+    businessPlans.forEach(group => {
+      // Only count ACTIVE subscriptions for MRR (not trials)
+      if (group.status === 'ACTIVE') {
+        mrr += (PLAN_PRICES[group.plan] || 0) * group._count;
+      }
+    });
+
     const arr = mrr * 12;
+
+    // Calculate total call minutes for cost analysis
+    const callStats = await prisma.call.aggregate({
+      where: {
+        endedAt: { not: null }
+      },
+      _sum: {
+        durationSeconds: true
+      },
+      _count: true
+    });
+
+    const totalCallMinutes = callStats._sum.durationSeconds
+      ? parseFloat((callStats._sum.durationSeconds / 60).toFixed(2))
+      : 0;
+
+    // Calculate platform costs
+    const platformCosts = costCalculator.calculatePlatformCosts({
+      totalCallMinutes,
+      totalCalls,
+      activePhoneNumbers,
+      revenue: mrr,
+      totalBusinesses,
+      daysInPeriod: 30
+    });
 
     // Calculate success rate
     const completedCalls = await prisma.call.count({
@@ -128,6 +175,9 @@ router.get('/dashboard', async (req, res) => {
         arr,
         growthRate: 0, // TODO: Calculate based on historical data
       },
+      costs: platformCosts.costs,
+      profit: platformCosts.profit,
+      metrics: platformCosts.metrics,
       recentBusinesses,
       recentCalls: recentCalls.map(call => ({
         ...call,
@@ -669,6 +719,257 @@ router.get('/system', async (req, res) => {
   } catch (error) {
     logger.error('System health error', { error: error.message });
     res.status(500).json({ error: 'Failed to get system health' });
+  }
+});
+
+// ============================================
+// USAGE ANALYTICS & COST TRACKING
+// ============================================
+
+/**
+ * Get Real-Time Usage Analytics
+ */
+router.get('/usage-analytics', async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - 7);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get usage by time period
+    const [todayStats, weekStats, monthStats] = await Promise.all([
+      prisma.call.aggregate({
+        where: {
+          startedAt: { gte: startOfToday },
+          endedAt: { not: null }
+        },
+        _sum: { durationSeconds: true, cost: true },
+        _count: true
+      }),
+      prisma.call.aggregate({
+        where: {
+          startedAt: { gte: startOfWeek },
+          endedAt: { not: null }
+        },
+        _sum: { durationSeconds: true, cost: true },
+        _count: true
+      }),
+      prisma.call.aggregate({
+        where: {
+          startedAt: { gte: startOfMonth },
+          endedAt: { not: null }
+        },
+        _sum: { durationSeconds: true, cost: true },
+        _count: true
+      })
+    ]);
+
+    // Calculate costs per minute (AI + Twilio)
+    const costPerMinute = 0.06 + 0.24 + 0.0048 + 0.013; // OpenAI in/out + Deepgram + Twilio
+
+    const todayMinutes = (todayStats._sum.durationSeconds || 0) / 60;
+    const weekMinutes = (weekStats._sum.durationSeconds || 0) / 60;
+    const monthMinutes = (monthStats._sum.durationSeconds || 0) / 60;
+
+    const todayCost = todayMinutes * costPerMinute;
+    const weekCost = weekMinutes * costPerMinute;
+    const monthCost = monthMinutes * costPerMinute;
+
+    // Get daily trends (last 7 days)
+    const dailyTrends = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(now);
+      dayStart.setDate(now.getDate() - i);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const dayStats = await prisma.call.aggregate({
+        where: {
+          startedAt: { gte: dayStart, lte: dayEnd },
+          endedAt: { not: null }
+        },
+        _sum: { durationSeconds: true }
+      });
+
+      const dayMinutes = (dayStats._sum.durationSeconds || 0) / 60;
+      const dayCost = dayMinutes * costPerMinute;
+
+      dailyTrends.push({
+        date: dayStart.toISOString(),
+        minutes: parseFloat(dayMinutes.toFixed(2)),
+        cost: parseFloat(dayCost.toFixed(2))
+      });
+    }
+
+    // Calculate infrastructure costs (prorated daily)
+    const infrastructureDailyCost = 46 / 30; // $46/month ÷ 30 days
+    const phoneNumberCount = await prisma.phoneNumber.count({
+      where: { status: 'ASSIGNED' }
+    });
+    const phoneNumberDailyCost = (phoneNumberCount * 1.00) / 30; // $1/month per number ÷ 30 days
+
+    const dailyBurnRate = (monthCost / new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()) +
+                          infrastructureDailyCost +
+                          phoneNumberDailyCost;
+
+    // Cost breakdown
+    const aiCost = monthMinutes * (0.06 + 0.24 + 0.0048); // OpenAI + Deepgram
+    const phoneCost = monthMinutes * 0.013 + (phoneNumberCount * 1.00); // Twilio voice + numbers
+    const infrastructureCost = 46;
+    const otherCost = 0; // SMS + Stripe (add when we have data)
+
+    const totalCost = aiCost + phoneCost + infrastructureCost + otherCost;
+
+    // Top cost businesses this month
+    const businessCosts = await prisma.call.groupBy({
+      by: ['businessId'],
+      where: {
+        startedAt: { gte: startOfMonth },
+        endedAt: { not: null }
+      },
+      _sum: {
+        durationSeconds: true,
+        cost: true
+      },
+      _count: true
+    });
+
+    // Get business details and calculate revenue
+    const topBusinesses = await Promise.all(
+      businessCosts
+        .sort((a, b) => (b._sum.durationSeconds || 0) - (a._sum.durationSeconds || 0))
+        .slice(0, 10)
+        .map(async (bc) => {
+          const business = await prisma.business.findUnique({
+            where: { id: bc.businessId },
+            select: { name: true, plan: true }
+          });
+
+          const PLAN_PRICES = {
+            STARTER: 299,
+            PROFESSIONAL: 799,
+            ENTERPRISE: 1499
+          };
+
+          const minutes = (bc._sum.durationSeconds || 0) / 60;
+          const cost = minutes * costPerMinute;
+          const revenue = PLAN_PRICES[business?.plan] || 0;
+          const margin = revenue > 0 ? ((revenue - cost) / revenue) * 100 : 0;
+
+          return {
+            id: bc.businessId,
+            name: business?.name || 'Unknown',
+            plan: business?.plan || 'N/A',
+            calls: bc._count,
+            minutes: parseFloat(minutes.toFixed(2)),
+            cost: parseFloat(cost.toFixed(2)),
+            revenue,
+            margin: parseFloat(margin.toFixed(2))
+          };
+        })
+    );
+
+    res.json({
+      success: true,
+      usage: {
+        today: {
+          minutes: parseFloat(todayMinutes.toFixed(2)),
+          cost: parseFloat(todayCost.toFixed(2)),
+          calls: todayStats._count
+        },
+        week: {
+          minutes: parseFloat(weekMinutes.toFixed(2)),
+          cost: parseFloat(weekCost.toFixed(2)),
+          calls: weekStats._count
+        },
+        month: {
+          minutes: parseFloat(monthMinutes.toFixed(2)),
+          cost: parseFloat(monthCost.toFixed(2)),
+          calls: monthStats._count
+        }
+      },
+      costs: {
+        dailyBurnRate: parseFloat(dailyBurnRate.toFixed(2)),
+        total: parseFloat(totalCost.toFixed(2)),
+        breakdown: {
+          ai: parseFloat(aiCost.toFixed(2)),
+          phone: parseFloat(phoneCost.toFixed(2)),
+          infrastructure: parseFloat(infrastructureCost.toFixed(2)),
+          other: parseFloat(otherCost.toFixed(2))
+        }
+      },
+      trends: {
+        daily: dailyTrends
+      },
+      topBusinesses
+    });
+  } catch (error) {
+    logger.error('Usage analytics error', { error: error.message });
+    res.status(500).json({ error: 'Failed to load usage analytics' });
+  }
+});
+
+// ============================================
+// CALLS MANAGEMENT
+// ============================================
+
+/**
+ * Get All Calls Across Platform
+ */
+router.get('/calls', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, outcome, businessId, startDate, endDate } = req.query;
+    const skip = (page - 1) * limit;
+
+    const where = {};
+    if (outcome) where.outcome = outcome;
+    if (businessId) where.businessId = businessId;
+    if (startDate || endDate) {
+      where.startedAt = {};
+      if (startDate) where.startedAt.gte = new Date(startDate);
+      if (endDate) where.startedAt.lte = new Date(endDate);
+    }
+
+    const [calls, total] = await Promise.all([
+      prisma.call.findMany({
+        where,
+        skip,
+        take: parseInt(limit),
+        orderBy: { startedAt: 'desc' },
+        include: {
+          business: {
+            select: { id: true, name: true },
+          },
+          customer: {
+            select: { name: true, phone: true },
+          },
+        },
+      }),
+      prisma.call.count({ where }),
+    ]);
+
+    res.json({
+      success: true,
+      calls: calls.map(call => ({
+        ...call,
+        callerPhone: call.fromNumber,
+        intent: call.intent || call.outcome,
+        duration: call.durationSeconds,
+        status: call.endedAt ? 'COMPLETED' : 'IN_PROGRESS',
+      })),
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    logger.error('Get all calls error', { error: error.message });
+    res.status(500).json({ error: 'Failed to load calls' });
   }
 });
 

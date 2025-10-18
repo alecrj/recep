@@ -436,9 +436,9 @@ export default function Businesses() {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     >
-                      <option value="STARTER">Starter - $99/mo</option>
-                      <option value="PROFESSIONAL">Professional - $199/mo</option>
-                      <option value="ENTERPRISE">Enterprise - $499/mo</option>
+                      <option value="STARTER">Starter - $299/mo</option>
+                      <option value="PROFESSIONAL">Professional - $799/mo</option>
+                      <option value="ENTERPRISE">Enterprise - $1,499/mo</option>
                     </select>
                   </div>
 

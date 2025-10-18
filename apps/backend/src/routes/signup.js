@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 const config = require('../utils/config');
 const { provisionPhoneNumber } = require('../services/phone-provisioning');
 const stripe = require('stripe')(config.STRIPE_SECRET_KEY);
+const stripePlans = require('../config/stripe-plans');
 
 const router = express.Router();
 
@@ -92,14 +93,12 @@ router.post(
         return res.status(400).json({ error: 'Email already registered' });
       }
 
-      // Define plan pricing
-      const PLANS = {
-        STARTER: { price: 29900, name: 'Starter' }, // $299 in cents
-        PROFESSIONAL: { price: 79900, name: 'Professional' },
-        ENTERPRISE: { price: 149900, name: 'Enterprise' }
-      };
+      // Get plan configuration from stripe-plans.js
+      const selectedPlan = stripePlans.getPlan(plan);
 
-      const selectedPlan = PLANS[plan];
+      if (!selectedPlan) {
+        return res.status(400).json({ error: 'Invalid plan selected' });
+      }
 
       logger.info('Starting signup process', {
         email,
@@ -144,20 +143,10 @@ router.post(
         customer: stripeCustomer.id,
         items: [
           {
-            price_data: {
-              currency: 'usd',
-              product_data: {
-                name: `Voxi AI Receptionist - ${selectedPlan.name} Plan`,
-                description: 'AI-powered phone receptionist for your business'
-              },
-              unit_amount: selectedPlan.price,
-              recurring: {
-                interval: 'month'
-              }
-            }
+            price: selectedPlan.priceId, // Use Price ID from Stripe Dashboard
           }
         ],
-        trial_period_days: 14,
+        trial_period_days: stripePlans.trial.days,
         metadata: {
           businessName: businessName,
           plan: plan
@@ -320,6 +309,31 @@ router.post(
     }
   }
 );
+
+/**
+ * Get available subscription plans
+ */
+router.get('/signup/plans', async (req, res) => {
+  try {
+    const plans = Object.entries(stripePlans.plans).map(([key, plan]) => ({
+      id: key,
+      name: plan.name,
+      price: plan.displayPrice,
+      priceInCents: plan.price,
+      interval: plan.interval,
+      features: plan.features
+    }));
+
+    res.json({
+      success: true,
+      plans,
+      trial: stripePlans.trial
+    });
+  } catch (error) {
+    logger.error('Get plans error', { error: error.message });
+    res.status(500).json({ error: 'Failed to load plans' });
+  }
+});
 
 /**
  * Get available area codes for phone number selection

@@ -10,6 +10,7 @@ import {
   CpuChipIcon
 } from '@heroicons/react/24/outline';
 import api from '../lib/api';
+import UsageAnalytics from '../components/UsageAnalytics';
 
 export default function Dashboard() {
   const { data, isLoading, error } = useQuery({
@@ -48,6 +49,33 @@ export default function Dashboard() {
     growthRate: 0
   };
 
+  const costs = data?.costs || {
+    total: 0,
+    calls: { total: 0, perMinute: 0, perCall: 0 },
+    phoneNumbers: 0,
+    sms: 0,
+    stripe: 0,
+    infrastructure: 0,
+    variable: 0,
+    fixed: 0
+  };
+
+  const profit = data?.profit || {
+    gross: 0,
+    net: 0,
+    grossMargin: 0,
+    netMargin: 0
+  };
+
+  const metrics = data?.metrics || {
+    totalCalls: 0,
+    totalCallMinutes: 0,
+    avgCallDuration: 0,
+    activePhoneNumbers: 0,
+    costPerBusiness: 0,
+    revenuePerBusiness: 0
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -60,21 +88,96 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Platform Revenue Card */}
-      <div className="rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 p-8 text-white shadow-lg shadow-green-500/10">
-        <h2 className="text-2xl font-display font-bold mb-6">Platform Revenue</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-emerald-100 text-sm mb-2">Monthly Recurring Revenue</p>
-            <p className="text-4xl font-bold">${(stats.mrr || 0).toLocaleString()}</p>
-          </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-emerald-100 text-sm mb-2">Annual Recurring Revenue</p>
-            <p className="text-4xl font-bold">${(stats.arr || 0).toLocaleString()}</p>
+      {/* Financial Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue Card */}
+        <div className="rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 p-8 text-white shadow-lg shadow-green-500/10">
+          <h2 className="text-2xl font-display font-bold mb-6">💰 Platform Revenue</h2>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <p className="text-emerald-100 text-sm mb-2">MRR</p>
+              <p className="text-3xl font-bold">${(stats.mrr || 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <p className="text-emerald-100 text-sm mb-2">ARR</p>
+              <p className="text-3xl font-bold">${(stats.arr || 0).toLocaleString()}</p>
+            </div>
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border-2 border-white/30">
-            <p className="text-white text-sm mb-2 font-semibold">Growth Rate</p>
-            <p className="text-5xl font-bold">{(stats.growthRate || 0) > 0 ? '+' : ''}{stats.growthRate || 0}%</p>
+            <p className="text-white text-sm mb-2 font-semibold">Net Profit</p>
+            <p className="text-4xl font-bold">${profit.net >= 0 ? '+' : ''}{profit.net.toLocaleString()}</p>
+            <p className="text-sm text-emerald-100 mt-1">{profit.netMargin}% margin</p>
+          </div>
+        </div>
+
+        {/* Expense Card */}
+        <div className="rounded-xl bg-gradient-to-r from-red-600 to-orange-600 p-8 text-white shadow-lg shadow-red-500/10">
+          <h2 className="text-2xl font-display font-bold mb-6">📊 Platform Expenses</h2>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <p className="text-orange-100 text-sm mb-2">AI & Phone Costs</p>
+              <p className="text-2xl font-bold">${costs.variable.toLocaleString()}</p>
+              <p className="text-xs text-orange-200 mt-1">Variable</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+              <p className="text-orange-100 text-sm mb-2">Infrastructure</p>
+              <p className="text-2xl font-bold">${costs.fixed.toLocaleString()}</p>
+              <p className="text-xs text-orange-200 mt-1">Fixed</p>
+            </div>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-lg p-4 border-2 border-white/30">
+            <p className="text-white text-sm mb-2 font-semibold">Total Expenses</p>
+            <p className="text-4xl font-bold">${costs.total.toLocaleString()}</p>
+            <p className="text-sm text-orange-100 mt-1">${metrics.costPerBusiness.toFixed(2)} per business</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Usage Analytics */}
+      <UsageAnalytics />
+
+      {/* Expense Breakdown */}
+      <div className="bg-zinc-900 rounded-xl shadow-sm border border-zinc-800 p-6">
+        <h3 className="text-lg font-display font-semibold text-white mb-4">💸 Expense Breakdown</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="text-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+            <p className="text-xs text-zinc-400 mb-1">AI Calls</p>
+            <p className="text-2xl font-bold text-white">${costs.calls.total}</p>
+            <p className="text-xs text-zinc-500 mt-1">{metrics.totalCallMinutes} mins</p>
+          </div>
+          <div className="text-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+            <p className="text-xs text-zinc-400 mb-1">Phone Numbers</p>
+            <p className="text-2xl font-bold text-white">${costs.phoneNumbers}</p>
+            <p className="text-xs text-zinc-500 mt-1">{metrics.activePhoneNumbers} numbers</p>
+          </div>
+          <div className="text-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+            <p className="text-xs text-zinc-400 mb-1">SMS</p>
+            <p className="text-2xl font-bold text-white">${costs.sms}</p>
+            <p className="text-xs text-zinc-500 mt-1">Messages</p>
+          </div>
+          <div className="text-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+            <p className="text-xs text-zinc-400 mb-1">Stripe Fees</p>
+            <p className="text-2xl font-bold text-white">${costs.stripe}</p>
+            <p className="text-xs text-zinc-500 mt-1">2.9% + $0.30</p>
+          </div>
+          <div className="text-center p-4 bg-zinc-950 border border-zinc-800 rounded-lg">
+            <p className="text-xs text-zinc-400 mb-1">Infrastructure</p>
+            <p className="text-2xl font-bold text-white">${costs.infrastructure}</p>
+            <p className="text-xs text-zinc-500 mt-1">Monthly</p>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-zinc-800">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-400">Cost per call</span>
+            <span className="text-sm font-medium text-white">${costs.calls.perCall.toFixed(4)}</span>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-zinc-400">Cost per minute</span>
+            <span className="text-sm font-medium text-white">${costs.calls.perMinute.toFixed(4)}</span>
+          </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-zinc-400">Average call duration</span>
+            <span className="text-sm font-medium text-white">{metrics.avgCallDuration.toFixed(1)} min</span>
           </div>
         </div>
       </div>

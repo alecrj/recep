@@ -1085,6 +1085,120 @@ router.get('/calendar/oauth-callback', async (req, res) => {
 });
 
 // ============================================
+// PHONE NUMBER MANAGEMENT
+// ============================================
+
+/**
+ * Search for Available Phone Numbers
+ */
+router.get('/phone-numbers/search', async (req, res) => {
+  try {
+    const { areaCode, region = 'US' } = req.query;
+
+    if (!areaCode) {
+      return res.status(400).json({ error: 'Area code is required' });
+    }
+
+    // Search for available numbers using Twilio
+    const availableNumbers = await twilioService.searchAvailableNumbers(areaCode, region);
+
+    if (!availableNumbers || availableNumbers.length === 0) {
+      return res.json({
+        success: true,
+        numbers: [],
+        message: 'No numbers available in this area code'
+      });
+    }
+
+    logger.info('Phone number search completed', {
+      businessId: req.user.id,
+      areaCode,
+      resultsCount: availableNumbers.length
+    });
+
+    res.json({
+      success: true,
+      numbers: availableNumbers
+    });
+  } catch (error) {
+    logger.error('Phone number search error', {
+      error: error.message,
+      businessId: req.user.id
+    });
+    res.status(500).json({ error: error.message || 'Failed to search for phone numbers' });
+  }
+});
+
+/**
+ * Purchase Phone Number
+ */
+router.post('/phone-numbers/purchase', async (req, res) => {
+  try {
+    const { phoneNumber, friendlyName } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Check if business already has this number
+    const existing = await prisma.phoneNumber.findUnique({
+      where: { phoneNumber }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'This number is already in use' });
+    }
+
+    // Purchase the number from Twilio
+    const purchasedNumber = await twilioService.purchasePhoneNumber(phoneNumber);
+
+    // Configure webhooks for this number
+    await twilioService.configureNumberWebhooks(
+      purchasedNumber.sid,
+      req.user.id
+    );
+
+    // Add number to database
+    const number = await prisma.phoneNumber.create({
+      data: {
+        phoneNumber: purchasedNumber.phoneNumber,
+        twilioSid: purchasedNumber.sid,
+        friendlyName: friendlyName || phoneNumber,
+        businessId: req.user.id,
+        status: 'ASSIGNED',
+        assignedAt: new Date(),
+        capabilities: purchasedNumber.capabilities,
+        region: 'US'
+      }
+    });
+
+    // Update business with this number
+    await prisma.business.update({
+      where: { id: req.user.id },
+      data: { twilioNumber: purchasedNumber.phoneNumber }
+    });
+
+    logger.info('Phone number purchased', {
+      businessId: req.user.id,
+      phoneNumber: purchasedNumber.phoneNumber,
+      cost: 5.00 // $5/month
+    });
+
+    res.status(201).json({
+      success: true,
+      number,
+      message: 'Phone number purchased successfully!'
+    });
+  } catch (error) {
+    logger.error('Phone number purchase error', {
+      error: error.message,
+      businessId: req.user.id
+    });
+    res.status(500).json({ error: error.message || 'Failed to purchase phone number' });
+  }
+});
+
+// ============================================
 // TESTING
 // ============================================
 

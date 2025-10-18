@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PhoneIcon } from '@heroicons/react/24/outline';
 import api from '../lib/api';
-import Layout from '../components/Layout';
 
 export default function Calls() {
   const [selectedCall, setSelectedCall] = useState(null);
@@ -17,27 +16,22 @@ export default function Calls() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Layout>
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
-          Error loading calls: {error.message}
-        </div>
-      </Layout>
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+        Error loading calls: {error.message}
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-white">All Calls</h2>
           <p className="text-zinc-400 mt-1">View all calls across the platform</p>
@@ -116,7 +110,10 @@ export default function Calls() {
               </table>
             </div>
           ) : (
-            <p className="text-zinc-500 text-center py-8">No calls yet</p>
+            <div className="text-center py-12">
+              <PhoneIcon className="w-12 h-12 text-zinc-600 mx-auto mb-3" />
+              <p className="text-zinc-500">No calls yet</p>
+            </div>
           )}
         </div>
 
@@ -173,7 +170,6 @@ export default function Calls() {
             </div>
           </div>
         )}
-      </div>
-    </Layout>
+    </div>
   );
 }
