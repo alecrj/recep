@@ -162,28 +162,40 @@ router.post('/book-appointment', async (req, res) => {
     });
 
     // Parse date and time into scheduledTime datetime
-    // Fix: Ensure we're using the current year, not a past year
+    // Fix: Ensure we're using the current year and treat time as local (Eastern) not UTC
     let scheduledTime;
     try {
-      // Try parsing the date string as-is first
-      scheduledTime = new Date(`${date}T${time}`);
-
-      // If the parsed date is more than 1 year in the past, it's likely wrong
+      // First, fix the year if needed
+      let fixedDate = date;
+      const testParse = new Date(`${date}T${time}`);
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-      if (scheduledTime < oneYearAgo) {
-        // Date is in the past - likely parsing issue, use current year
+      if (testParse < oneYearAgo) {
+        // Date is in the past - use current year
         const currentYear = new Date().getFullYear();
-        const dateWithCurrentYear = date.replace(/\d{4}/, currentYear.toString());
-        scheduledTime = new Date(`${dateWithCurrentYear}T${time}`);
+        fixedDate = date.replace(/\d{4}/, currentYear.toString());
         logger.info('Adjusted date to current year', {
           original: date,
-          adjusted: dateWithCurrentYear,
-          originalParsed: new Date(`${date}T${time}`).toISOString(),
-          adjustedParsed: scheduledTime.toISOString()
+          adjusted: fixedDate
         });
       }
+
+      // Parse as local Eastern time, not UTC
+      // Format: "2025-10-11T14:00:00-04:00" (Eastern Daylight Time)
+      // Note: This assumes business is in Eastern timezone - TODO: make configurable
+      const easternOffset = '-04:00'; // EDT (or -05:00 for EST)
+      const dateTimeString = `${fixedDate}T${time}:00${easternOffset}`;
+      scheduledTime = new Date(dateTimeString);
+
+      logger.info('Parsed appointment time', {
+        inputDate: date,
+        inputTime: time,
+        fixedDate,
+        dateTimeString,
+        parsedUTC: scheduledTime.toISOString(),
+        parsedLocal: scheduledTime.toString()
+      });
     } catch (error) {
       logger.error('Error parsing date/time', { date, time, error: error.message });
       throw new Error('Invalid date or time format');
