@@ -195,8 +195,7 @@ router.post('/book-appointment', async (req, res) => {
         customerPhone: customer_phone,
         status: 'SCHEDULED',
         notes: 'Booked via AI receptionist',
-        calendarEventId: calendarEventId,
-        createdBy: 'ai'
+        googleCalendarEventId: calendarEventId, // Fixed: use googleCalendarEventId
       }
     });
 
