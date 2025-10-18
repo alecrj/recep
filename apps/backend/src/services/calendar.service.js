@@ -17,10 +17,21 @@ const { prisma } = require('@ai-receptionist/database');
 
 class CalendarService {
   constructor() {
+    // Debug logging for environment variables
+    logger.info('Calendar Service Initialization', {
+      hasClientId: !!config.GOOGLE_CLIENT_ID,
+      hasClientSecret: !!config.GOOGLE_CLIENT_SECRET,
+      hasRedirectUri: !!config.GOOGLE_REDIRECT_URI,
+      clientIdPrefix: config.GOOGLE_CLIENT_ID?.substring(0, 20) + '...',
+      nodeEnv: process.env.NODE_ENV
+    });
+
     this.testMode = !config.GOOGLE_CLIENT_ID || config.GOOGLE_CLIENT_ID === 'your_google_client_id';
 
     if (this.testMode) {
-      logger.warn('CalendarService running in TEST MODE - using mock calendar');
+      logger.warn('CalendarService running in TEST MODE - using mock calendar', {
+        reason: !config.GOOGLE_CLIENT_ID ? 'No GOOGLE_CLIENT_ID' : 'Invalid GOOGLE_CLIENT_ID'
+      });
       this.oauth2Client = null;
     } else {
       this.oauth2Client = new google.auth.OAuth2(
