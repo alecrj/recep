@@ -76,12 +76,17 @@ export default function Settings() {
   const isLoading = configLoading || profileLoading;
 
   const mutation = useMutation({
-    mutationFn: async (configData) => {
-      const response = await api.put('/business/config', configData);
-      return response.data;
+    mutationFn: async ({ profileData, configData }) => {
+      // Save both profile and config
+      const responses = await Promise.all([
+        profileData ? api.put('/business/profile', profileData) : Promise.resolve(),
+        api.put('/business/config', configData),
+      ]);
+      return responses;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     },
@@ -90,8 +95,15 @@ export default function Settings() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const config = {
-      businessName: formData.get('businessName'),
+
+    // Profile data (Business table)
+    const profileData = {
+      name: formData.get('businessName'),
+      phoneNumber: formData.get('phoneNumber'),
+    };
+
+    // Config data (BusinessConfig table)
+    const configData = {
       greetingMessage: formData.get('greetingMessage'),
       afterHoursMessage: formData.get('afterHoursMessage'),
       businessHoursStart: formData.get('businessHoursStart'),
@@ -99,13 +111,13 @@ export default function Settings() {
       appointmentDuration: parseInt(formData.get('appointmentDuration')),
       voiceModel: formData.get('voiceModel'),
       language: formData.get('language'),
-      phoneNumber: formData.get('phoneNumber'),
       services: services, // Include services array
       faqs: faqs, // Include FAQs array
       aiVoice: selectedVoice, // Include selected voice
       ...transferSettings, // Include transfer settings
     };
-    mutation.mutate(config);
+
+    mutation.mutate({ profileData, configData });
   };
 
   const handleConnectCalendar = async () => {
@@ -193,7 +205,7 @@ export default function Settings() {
                     <input
                       type="text"
                       name="businessName"
-                      defaultValue={data?.businessName || ''}
+                      defaultValue={data?.name || ''}
                       className="w-full px-4 py-2 border border-zinc-800 rounded-lg bg-zinc-900 text-white placeholder-zinc-500 focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       required
                     />
