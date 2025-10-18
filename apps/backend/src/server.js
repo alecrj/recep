@@ -115,6 +115,14 @@ app.use('/api/auth', authRoutes);
 const { router: signupRoutes } = require('./routes/signup');
 app.use('/api', signupRoutes);
 
+// Plans & pricing routes
+const { router: plansRoutes } = require('./routes/plans');
+app.use('/api', plansRoutes);
+
+// Stripe webhooks & utilities
+const { router: stripeRoutes } = require('./routes/stripe-webhooks');
+app.use('/api', stripeRoutes);
+
 // Admin routes
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);

@@ -13,6 +13,8 @@
     "@headlessui/react": "^1.7.17",
     "@hello-pangea/dnd": "^18.0.1",
     "@heroicons/react": "^2.1.1",
+    "@stripe/react-stripe-js": "^5.2.0",
+    "@stripe/stripe-js": "^8.1.0",
     "@tanstack/react-query": "^5.17.0",
     "apexcharts": "^5.3.5",
     "axios": "^1.6.5",

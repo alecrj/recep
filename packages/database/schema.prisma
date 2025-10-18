@@ -31,6 +31,10 @@ model Business {
   ownerName   String?  @map("owner_name")
   password    String?  // Hashed password for business owner login
 
+  // Stripe billing
+  stripeCustomerId      String? @unique @map("stripe_customer_id")
+  stripeSubscriptionId  String? @unique @map("stripe_subscription_id")
+
   // Relations
   config       BusinessConfig?
   customers    Customer[]
