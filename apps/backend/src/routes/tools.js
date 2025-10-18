@@ -210,25 +210,35 @@ router.post('/book-appointment', async (req, res) => {
 
     // Send SMS confirmation
     try {
-      await twilioService.sendAppointmentConfirmation(customer_phone, {
-        businessName: business.name,
-        date: new Date(scheduledTime).toLocaleDateString('en-US', {
-          weekday: 'long',
-          month: 'long',
-          day: 'numeric'
-        }),
-        time: new Date(scheduledTime).toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        service: service_type
+      await twilioService.sendAppointmentConfirmation(
+        customer_phone,
+        {
+          businessName: business.name,
+          date: new Date(scheduledTime).toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+          }),
+          time: new Date(scheduledTime).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          }),
+          service: service_type
+        },
+        business.twilioNumber // Send FROM the business's Twilio number
+      );
+      logger.info('SMS confirmation sent', {
+        customer_phone,
+        appointmentId: appointment.id,
+        from: business.twilioNumber
       });
-      logger.info('SMS confirmation sent', { customer_phone, appointmentId: appointment.id });
     } catch (smsError) {
       logger.error('Failed to send SMS confirmation', {
         error: smsError.message,
-        appointmentId: appointment.id
+        stack: smsError.stack,
+        appointmentId: appointment.id,
+        from: business.twilioNumber
       });
       // Don't fail the booking if SMS fails
     }

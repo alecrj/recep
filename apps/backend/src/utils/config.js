@@ -19,6 +19,7 @@ module.exports = {
   TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
   TWILIO_API_KEY: process.env.TWILIO_API_KEY,
   TWILIO_API_SECRET: process.env.TWILIO_API_SECRET,
+  TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
 
   // AI Services
   DEEPGRAM_API_KEY: process.env.DEEPGRAM_API_KEY,

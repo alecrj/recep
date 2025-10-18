@@ -79,10 +79,11 @@ class TwilioService {
   /**
    * Send SMS message
    */
-  async sendSMS(to, message) {
+  async sendSMS(to, message, fromNumber = null) {
     if (this.testMode) {
       logger.info('[TEST MODE] Would send SMS', {
         to,
+        from: fromNumber,
         message: message.substring(0, 50) + '...',
       });
       return {
@@ -95,13 +96,14 @@ class TwilioService {
     try {
       const result = await this.client.messages.create({
         body: message,
-        from: config.TWILIO_PHONE_NUMBER,
+        from: fromNumber || config.TWILIO_PHONE_NUMBER,
         to: to,
       });
 
       logger.info('SMS sent successfully', {
         sid: result.sid,
         to: to,
+        from: fromNumber || config.TWILIO_PHONE_NUMBER,
       });
 
       return {
@@ -112,6 +114,7 @@ class TwilioService {
       logger.error('Failed to send SMS', {
         error: error.message,
         to,
+        from: fromNumber,
       });
       throw error;
     }
@@ -233,7 +236,7 @@ class TwilioService {
   /**
    * Send appointment confirmation SMS
    */
-  async sendAppointmentConfirmation(phone, appointmentDetails) {
+  async sendAppointmentConfirmation(phone, appointmentDetails, fromNumber = null) {
     const message = `✅ Appointment Confirmed!
 
 Date: ${appointmentDetails.date}
@@ -245,7 +248,7 @@ ${appointmentDetails.address || ''}
 
 Reply CANCEL to cancel.`;
 
-    return this.sendSMS(phone, message);
+    return this.sendSMS(phone, message, fromNumber);
   }
 
   /**
