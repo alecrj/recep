@@ -111,6 +111,10 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+// Self-serve signup routes
+const { router: signupRoutes } = require('./routes/signup');
+app.use('/api', signupRoutes);
+
 // Admin routes
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);

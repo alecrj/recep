@@ -54,7 +54,9 @@ router.post('/elevenlabs/incoming', async (req, res) => {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Connect>
-          <Stream url="${wsProtocol}://${host}/elevenlabs-stream/${business.id}" track="inbound_track" />
+          <Stream url="${wsProtocol}://${host}/elevenlabs-stream/${business.id}">
+            <Parameter name="track" value="inbound_track" />
+          </Stream>
         </Connect>
       </Response>`;
 
