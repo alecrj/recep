@@ -161,12 +161,16 @@ function handleElevenLabsConnection(ws, businessId) {
         logger.info('✅ Connected to ElevenLabs Conversational AI', { businessId, agentId });
 
         // Send conversation initiation with dynamic variables and first message
+        // Request ulaw_8000 audio format for Twilio compatibility
         const initMessage = {
           type: 'conversation_initiation_client_data',
           conversation_config_override: {
             agent: {
               first_message: dynamicVariables.greeting,
               language: 'en'
+            },
+            tts: {
+              output_format: 'ulaw_8000' // μ-law 8kHz for Twilio
             }
           },
           dynamic_variables: dynamicVariables
