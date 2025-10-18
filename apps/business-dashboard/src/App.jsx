@@ -3,6 +3,7 @@ import { useAuthStore } from './stores/authStore';
 import AppLayout from './layout/AppLayout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Welcome from './pages/Welcome';
 import Dashboard from './pages/Dashboard';
 import Calls from './pages/Calls';
 import Customers from './pages/Customers';
@@ -21,6 +22,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/welcome" element={<Welcome />} />
         <Route
           element={
             <ProtectedRoute>

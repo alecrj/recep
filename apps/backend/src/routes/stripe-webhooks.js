@@ -100,8 +100,7 @@ async function handleSubscriptionCreated(subscription) {
   // Find business by Stripe customer ID
   const business = await prisma.business.findFirst({
     where: {
-      // TODO: Add stripeCustomerId field to Business model
-      ownerEmail: subscription.customer_email
+      stripeCustomerId: subscription.customer
     }
   });
 
@@ -131,7 +130,7 @@ async function handleSubscriptionUpdated(subscription) {
 
   const business = await prisma.business.findFirst({
     where: {
-      ownerEmail: subscription.customer_email
+      stripeCustomerId: subscription.customer
     }
   });
 
@@ -170,7 +169,7 @@ async function handleSubscriptionDeleted(subscription) {
 
   const business = await prisma.business.findFirst({
     where: {
-      ownerEmail: subscription.customer_email
+      stripeCustomerId: subscription.customer
     }
   });
 
@@ -217,7 +216,7 @@ async function handlePaymentFailed(invoice) {
 
   const business = await prisma.business.findFirst({
     where: {
-      ownerEmail: invoice.customer_email
+      stripeCustomerId: invoice.customer
     }
   });
 
@@ -254,7 +253,7 @@ async function handleTrialWillEnd(subscription) {
 
   const business = await prisma.business.findFirst({
     where: {
-      ownerEmail: subscription.customer_email
+      stripeCustomerId: subscription.customer
     }
   });
 

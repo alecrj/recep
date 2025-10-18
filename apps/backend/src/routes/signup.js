@@ -187,6 +187,8 @@ router.post(
           industry: industry,
           status: 'TRIAL',
           plan: plan,
+          stripeCustomerId: stripeCustomer.id,
+          stripeSubscriptionId: subscription.id,
           config: {
             create: {
               greetingMessage: `Thank you for calling ${businessName}. How can I help you today?`,
