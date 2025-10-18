@@ -1,6 +1,7 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+  base = "apps/admin-dashboard"
+  command = "npm install && npm run build"
+  publish = "apps/admin-dashboard/dist"
 
 [build.environment]
   NODE_VERSION = "20"
