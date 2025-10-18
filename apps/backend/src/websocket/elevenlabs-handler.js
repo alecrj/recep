@@ -137,6 +137,10 @@ function handleElevenLabsConnection(ws, businessId) {
         }
       }
 
+      // Get current date for the AI to know "today" and "tomorrow"
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
       const dynamicVariables = {
         business_name: business.name || 'our company',
         greeting: businessConfig.greetingMessage || `Thanks for calling ${business.name}! How can I help you today?`,
@@ -145,7 +149,9 @@ function handleElevenLabsConnection(ws, businessId) {
         service_area: businessConfig.serviceArea || 'our local area',
         emergency_phone: businessConfig.emergencyContactPhone || business.ownerPhone || '+15555555555',
         owner_name: business.ownerName || 'the owner',
-        business_id: business.id
+        business_id: business.id,
+        current_date: currentDate, // So AI knows what "today" and "tomorrow" are
+        current_year: now.getFullYear().toString() // So AI always uses correct year
       };
 
       logger.info('Dynamic variables prepared', { businessId, dynamicVariables });
