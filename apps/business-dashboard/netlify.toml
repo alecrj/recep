@@ -1,7 +1,7 @@
 [build]
   base = "apps/business-dashboard"
   command = "npm install && npm run build"
-  publish = "apps/business-dashboard/dist"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
