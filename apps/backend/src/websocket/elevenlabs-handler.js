@@ -160,16 +160,13 @@ function handleElevenLabsConnection(ws, businessId) {
       elevenLabsWs.on('open', () => {
         logger.info('✅ Connected to ElevenLabs Conversational AI', { businessId, agentId });
 
-        // Send conversation initiation with dynamic variables and audio config
+        // Send conversation initiation with dynamic variables and first message
         const initMessage = {
           type: 'conversation_initiation_client_data',
           conversation_config_override: {
             agent: {
               first_message: dynamicVariables.greeting,
               language: 'en'
-            },
-            tts: {
-              voice_id: businessConfig.elevenLabsVoiceId || 'EXAVITQu4vr4xnSDxMaL' // Sarah voice
             }
           },
           dynamic_variables: dynamicVariables
