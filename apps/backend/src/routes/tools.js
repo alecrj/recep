@@ -162,7 +162,33 @@ router.post('/book-appointment', async (req, res) => {
     });
 
     // Parse date and time into scheduledTime datetime
-    const scheduledTime = new Date(`${date}T${time}`);
+    // Fix: Ensure we're using the current year, not a past year
+    let scheduledTime;
+    try {
+      // Try parsing the date string as-is first
+      scheduledTime = new Date(`${date}T${time}`);
+
+      // If the parsed date is more than 1 year in the past, it's likely wrong
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      if (scheduledTime < oneYearAgo) {
+        // Date is in the past - likely parsing issue, use current year
+        const currentYear = new Date().getFullYear();
+        const dateWithCurrentYear = date.replace(/\d{4}/, currentYear.toString());
+        scheduledTime = new Date(`${dateWithCurrentYear}T${time}`);
+        logger.info('Adjusted date to current year', {
+          original: date,
+          adjusted: dateWithCurrentYear,
+          originalParsed: new Date(`${date}T${time}`).toISOString(),
+          adjustedParsed: scheduledTime.toISOString()
+        });
+      }
+    } catch (error) {
+      logger.error('Error parsing date/time', { date, time, error: error.message });
+      throw new Error('Invalid date or time format');
+    }
+
     const durationMinutes = business.config?.appointmentDuration || 60;
 
     // Book appointment in Google Calendar (or database if not connected)
