@@ -116,7 +116,10 @@ router.post('/book-appointment', async (req, res) => {
       date,
       time,
       service_type,
-      business_id
+      business_id,
+      dateType: typeof date,
+      timeType: typeof time,
+      combinedString: `${date}T${time}`
     });
 
     // Validate required fields
