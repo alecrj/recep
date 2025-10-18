@@ -114,33 +114,35 @@ router.post('/book-appointment', async (req, res) => {
     // Create or update customer record
     const customer = await prisma.customer.upsert({
       where: {
-        phone_businessId: {
-          phone: customer_phone,
-          businessId: business_id
+        businessId_phone: {
+          businessId: business_id,
+          phone: customer_phone
         }
       },
       update: {
         name: customer_name,
-        lastContactedAt: new Date()
+        lastContact: new Date()
       },
       create: {
         name: customer_name,
         phone: customer_phone,
-        businessId: business_id,
-        source: 'PHONE_CALL'
+        businessId: business_id
       }
     });
 
-    // Parse date and time into scheduledAt datetime
-    const scheduledAt = new Date(`${date}T${time}`);
+    // Parse date and time into scheduledTime datetime
+    const scheduledTime = new Date(`${date}T${time}`);
 
     // Create appointment
     const appointment = await prisma.appointment.create({
       data: {
         businessId: business_id,
         customerId: customer.id,
-        scheduledAt: scheduledAt,
+        scheduledTime: scheduledTime,
+        durationMinutes: business.config?.appointmentDuration || 60,
         serviceType: service_type,
+        customerName: customer_name,
+        customerPhone: customer_phone,
         status: 'SCHEDULED',
         notes: `Booked via AI receptionist`
       }
@@ -213,20 +215,19 @@ router.post('/take-message', async (req, res) => {
     // Create or update customer record
     const customer = await prisma.customer.upsert({
       where: {
-        phone_businessId: {
-          phone: customer_phone,
-          businessId: business_id
+        businessId_phone: {
+          businessId: business_id,
+          phone: customer_phone
         }
       },
       update: {
         name: customer_name,
-        lastContactedAt: new Date()
+        lastContact: new Date()
       },
       create: {
         name: customer_name,
         phone: customer_phone,
-        businessId: business_id,
-        source: 'PHONE_CALL'
+        businessId: business_id
       }
     });
 
